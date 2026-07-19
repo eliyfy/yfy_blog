@@ -679,7 +679,8 @@
         // ================================================================
         //  INIT
         // ================================================================
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initDB();
             loadState();
             initTheme();
             initViews();
@@ -691,19 +692,132 @@
             initQuote();
             renderHomeRecent();
             renderArticleList();
+            renderTimelineList();
         });
 
-        function loadState() {
-            try {
-                const a = localStorage.getItem('blog_articles');
-                if (a) articles = JSON.parse(a);
-                if (!Array.isArray(articles)) articles = [];
-            } catch(e) { articles = []; }
+        // ====== IndexedDB 存储 ======
+        let db;
+        function initDB() {
+            return new Promise((ok, fail) => {
+                const r = indexedDB.open('yfy_blog', 2);
+                r.onupgradeneeded = e => {
+                    const d = e.target.result;
+                    if (!d.objectStoreNames.contains('articles')) {
+                        d.createObjectStore('articles', { keyPath: 'id' });
+                    }
+                };
+                r.onsuccess = e => { db = e.target.result; ok(); };
+                r.onerror = () => fail(r.error);
+            });
+        }
+        function dbAll() {
+            return new Promise((ok, fail) => {
+                const tx = db.transaction('articles', 'readonly');
+                const req = tx.objectStore('articles').getAll();
+                req.onsuccess = () => ok(req.result || []);
+                req.onerror = () => fail(req.error);
+            });
+        }
+        function dbPut(a) {
+            return new Promise((ok, fail) => {
+                const tx = db.transaction('articles', 'readwrite');
+                const req = tx.objectStore('articles').put(a);
+                req.onsuccess = ok;
+                req.onerror = () => fail(req.error);
+            });
+        }
+        function dbDel(id) {
+            return new Promise((ok, fail) => {
+                const tx = db.transaction('articles', 'readwrite');
+                const req = tx.objectStore('articles').delete(id);
+                req.onsuccess = ok;
+                req.onerror = () => fail(req.error);
+            });
+        }
+        async function loadArticles() {
+            let arr = await dbAll();
+            // 迁移旧 localStorage 数据
+            const old = localStorage.getItem('blog_articles');
+            if (old) {
+                try {
+                    const oldArr = JSON.parse(old);
+                    for (const a of oldArr) {
+                        if (!a.id) a.id = 'a_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+                        await dbPut(a);
+                    }
+                    localStorage.removeItem('blog_articles');
+                    arr = await dbAll();
+                } catch(e) {}
+            }
+            articles = arr.sort((a,b) => a.ts - b.ts);
         }
 
-        function saveState() {
-            localStorage.setItem('blog_articles', JSON.stringify(articles));
+        // ====== 时间线视图 ======
+        function renderTimelineList() {
+            const list = $('timelineList');
+            if (!list) return;
+            const tl = $('timelineView');
+            if (!tl) return;
+            tl.classList.toggle('hidden', !isLoggedIn);
+            if (!isLoggedIn) return;
+
+            if (!articles.length) {
+                list.innerHTML = '<div class="tl-empty">时间线为空，写点东西吧</div>';
+                return;
+            }
+            let html = '';
+            const reversed = [...articles].reverse();
+            reversed.forEach((a, i) => {
+                const d = new Date(a.ts);
+                const dateStr = d.getFullYear() + '-' +
+                    String(d.getMonth()+1).padStart(2,'0') + '-' +
+                    String(d.getDate()).padStart(2,'0');
+                const timeStr = String(d.getHours()).padStart(2,'0') + ':' +
+                    String(d.getMinutes()).padStart(2,'0');
+                const cls = i === 0 ? ' tl-first' : '';
+                html += '<div class="tl-item' + cls + '">';
+                html += '<div class="tl-dot"></div>';
+                html += '<div class="tl-card">';
+                html += '<div class="tl-date">' + dateStr + ' <span>' + timeStr + '</span></div>';
+                html += '<div class="tl-title" onclick="openArticle(\'' + a.id + '\')">' + escHtml(a.title) + '</div>';
+                if (a.excerpt) html += '<div class="tl-excerpt">' + escHtml(a.excerpt.slice(0, 120)) + '</div>';
+                if (isLoggedIn) {
+                    html += '<div class="tl-actions">';
+                    html += '<span onclick="openTimelineEditor(\'' + a.id + '\')">编辑</span>';
+                    html += '<span onclick="delTimelineArticle(\'' + a.id + '\')">删除</span>';
+                    html += '</div>';
+                }
+                html += '</div></div>';
+            });
+            list.innerHTML = html;
         }
+
+        async function delTimelineArticle(id) {
+            if (!confirm('删除这篇文章？')) return;
+            await dbDel(id);
+            await loadArticles();
+            renderTimelineList();
+            renderArticleList();
+            renderHomeRecent();
+            toast('已删除');
+        }
+
+        function openTimelineEditor(id) {
+            const a = articles.find(x => x.id === id);
+            if (!a) return;
+            editorIdx = articles.indexOf(a);
+            $('editorTitle').value = a.title || '';
+            $('editorCat').value = a.cat || '';
+            $('editorText').value = a.content || '';
+            $('editorModal').classList.add('open');
+        }
+
+        function loadState() {
+            const savedLogin = localStorage.getItem('blog_login');
+            if (savedLogin === 'true') setLoggedIn(true);
+        }
+
+        function saveState() {} // deprecated, now using IndexedDB
 
         // ================================================================
         //  THEME

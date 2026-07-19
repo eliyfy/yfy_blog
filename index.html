@@ -431,7 +431,25 @@
             .player-progress { width:32px; }
             .toast-container { bottom:70px; left:12px; right:12px; transform:none; }
         }
-    </style>
+    
+        /* ====== 时间线 ====== */
+        .tl-item { display: flex; gap: 14px; margin-bottom: 0; position: relative; }
+        .tl-item::before { content: ''; position: absolute; left: 5px; top: 18px; bottom: -18px; width: 1px; background: var(--border); }
+        .tl-item:last-child::before { display: none; }
+        .tl-first .tl-dot { background: var(--accent); box-shadow: 0 0 0 3px rgba(43,43,43,.12); }
+        .tl-dot { width: 11px; height: 11px; min-width: 11px; border-radius: 50%; background: var(--border); margin-top: 6px; transition: background .3s; }
+        .tl-card { flex: 1; padding: 10px 0 20px; border-bottom: 1px solid var(--border); }
+        .tl-item:last-child .tl-card { border-bottom: none; }
+        .tl-date { font-size: .78rem; color: var(--text-dim); margin-bottom: 4px; }
+        .tl-date span { opacity: .5; margin-left: 6px; font-family: 'JetBrains Mono', monospace; }
+        .tl-title { font-weight: 600; cursor: pointer; font-size: 1.05rem; transition: opacity .2s; }
+        .tl-title:hover { opacity: .7; }
+        .tl-excerpt { font-size: .82rem; color: var(--text-dim); margin-top: 4px; line-height: 1.5; }
+        .tl-actions { margin-top: 10px; display: flex; gap: 16px; font-size: .78rem; }
+        .tl-actions span { cursor: pointer; opacity: .6; transition: opacity .2s; }
+        .tl-actions span:hover { opacity: 1; }
+        .tl-empty { font-size: .9rem; color: var(--text-dim); padding: 20px 0; }
+</style>
 </head>
 <body>
     <div class="page">
@@ -461,6 +479,7 @@
                 <div class="home-divider"></div>
                 <div class="home-sections">
                     <a href="#" data-view="articles">
+                    <a href="#" data-view="timeline">
                         文章 <span class="arrow">&nbsp;→</span>
                     </a>
                     <a href="#" data-view="toolbox" id="homeToolbox" style="display:none">
@@ -487,6 +506,14 @@
             </div>
             <div id="articleList"></div>
         </section>
+        <!-- ========== VIEW: TIMELINE ========== -->
+        <section class="view" id="view-timeline">
+            <div class="page-header">
+                <h2>时间线</h2>
+            </div>
+            <div id="timelineList"></div>
+        </section>
+
 
         <!-- ========== VIEW: TOOLBOX ========== -->
         <section class="view" id="view-toolbox">
@@ -693,6 +720,7 @@
             renderHomeRecent();
             renderArticleList();
             renderTimelineList();
+            renderTimelineList();
         });
 
         // ====== IndexedDB 存储 ======
@@ -798,6 +826,7 @@
             await loadArticles();
             renderTimelineList();
             renderArticleList();
+            renderTimelineList();
             renderHomeRecent();
             toast('已删除');
         }
@@ -843,7 +872,7 @@
                 el.addEventListener('click', e => {
                     e.preventDefault();
                     const v = el.dataset.view;
-                    if (v === 'toolbox' && !isLoggedIn) return;
+                    if ((v === 'toolbox' || v === 'timeline') && !isLoggedIn) return;
                     switchView(v);
                 });
             });
@@ -910,6 +939,7 @@
             $('logoutBtn').addEventListener('click', () => {
                 setLoggedIn(false);
                 localStorage.removeItem('blog_login');
+                if ($('view-timeline')) $('view-timeline').classList.add('hidden');
                 toast('已退出');
                 switchView('home');
             });
@@ -919,6 +949,7 @@
             isLoggedIn = val;
             if (val) {
                 $('loginBtn').style.display = 'none';
+                if ($('view-timeline')) $('view-timeline').classList.remove('hidden');
                 $('loginStatus').style.display = 'flex';
                 $('loginDisplayName').textContent = ADMIN_USER;
                 $('navToolbox').style.display = 'inline-block';
@@ -934,6 +965,7 @@
                 if (currentView === 'toolbox') switchView('home');
             }
             renderArticleList();
+            renderTimelineList();
             renderHomeRecent();
         }
 
@@ -1033,6 +1065,7 @@
                             articles.splice(idx, 1);
                             saveState();
                             renderArticleList();
+            renderTimelineList();
                             renderHomeRecent();
                             toast('已删除');
                         }
@@ -1110,6 +1143,7 @@
             saveState();
             closeEditor();
             renderArticleList();
+            renderTimelineList();
             renderHomeRecent();
             toast(editingId !== null ? '已更新' : '已发布');
         }

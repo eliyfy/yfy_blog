@@ -1,0 +1,147 @@
+{
+  "currentProviderId": "profile-12",
+  "providers": [
+    {
+      "apiKey": "sk-xLPfPcfmpXh2qR5zKKdRdz0JrMXNUanT7UWrCAf2R05CGAVD",
+      "baseUrl": "https://new-api.rugao.me",
+      "customHeaders": {},
+      "id": "profile-1",
+      "name": "喵喵聚合",
+      "protocolType": "openai_compatible",
+      "wireApi": "chat_completions"
+    },
+    {
+      "apiKey": "",
+      "baseUrl": "https://api.deepseek.com",
+      "customHeaders": {},
+      "id": "deepseek-official",
+      "name": "DeepSeek",
+      "protocolType": "deepseek",
+      "wireApi": "chat_completions"
+    },
+    {
+      "apiKey": "sk-bef65fa8-93fe-4aa3-a717-69e0ab498422",
+      "baseUrl": "https://2c2ch1u11-share-api-0.hf.space",
+      "customHeaders": {},
+      "id": "profile-7",
+      "name": "ds墨",
+      "protocolType": "openai_compatible",
+      "wireApi": "chat_completions"
+    },
+    {
+      "apiKey": "sk-I9DX1mTBk1zJy0RdVIuV68Y8lKfkbJlcYkWk2bMxw3vaDlk1",
+      "baseUrl": "https://jiuuij.de5.net",
+      "customHeaders": {},
+      "id": "profile-8",
+      "name": "J",
+      "protocolType": "openai_compatible",
+      "wireApi": "chat_completions"
+    },
+    {
+      "apiKey": "sk-7caea4a9bf7a710174cc26accc1129baa21beb6063f4a7cd8fc257f7d92c4fd0",
+      "baseUrl": "https://api.ambition.qzz.io",
+      "customHeaders": {},
+      "id": "profile-9",
+      "name": "gpt订阅",
+      "protocolType": "openai_compatible",
+      "wireApi": "chat_completions"
+    },
+    {
+      "apiKey": "",
+      "baseUrl": "https://api.xiaomimimo.com/v1",
+      "customHeaders": {},
+      "id": "mimo-official",
+      "name": "Mimo",
+      "protocolType": "openai_compatible",
+      "wireApi": "chat_completions"
+    },
+    {
+      "apiKey": "",
+      "baseUrl": "https://api.moonshot.cn/v1",
+      "customHeaders": {},
+      "id": "moonshot-official",
+      "name": "Kimi",
+      "protocolType": "openai_compatible",
+      "wireApi": "chat_completions"
+    },
+    {
+      "apiKey": "",
+      "baseUrl": "https://api.minimaxi.com/v1",
+      "customHeaders": {},
+      "id": "minimax-official",
+      "name": "MiniMax",
+      "protocolType": "openai_compatible",
+      "wireApi": "chat_completions"
+    },
+    {
+      "apiKey": "",
+      "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "customHeaders": {},
+      "id": "bailian-official",
+      "name": "阿里百炼",
+      "protocolType": "openai_compatible",
+      "wireApi": "chat_completions"
+    },
+    {
+      "apiKey": "sk-EI70XAPXqSgKClbM15R99TSm8P0TawXI8tlydKwebvFURUqf",
+      "baseUrl": "https://chenchen.openachieve.asia",
+      "customHeaders": {},
+      "id": "profile-10",
+      "name": "尘尘",
+      "protocolType": "openai_compatible",
+      "wireApi": "chat_completions"
+    },
+    {
+      "apiKey": "sk-OytFJhWUZV87G3H4swGqRloYYWgJzz6dqOHrvk3bgNV9wxOi",
+      "baseUrl": "https://metapi.lilililwan.xyz",
+      "customHeaders": {},
+      "id": "profile-11",
+      "name": "liwan国",
+      "protocolType": "openai_compatible",
+      "wireApi": "chat_completions"
+    },
+    {
+      "apiKey": "sk-6zBAF6sd78Fc4yzvzvV2pZD4QCKCvkOL1sDBmwDRUuHGqmC9",
+      "baseUrl": "https://x666.me",
+      "customHeaders": {},
+      "id": "profile-12",
+      "name": "薄荷",
+      "protocolType": "openai_compatible",
+      "wireApi": "chat_completions"
+    }
+  ],
+  "sceneModels": {
+    "scene.compactor.context.chat": {
+      "model": "gemini-3.1-flash-lite",
+      "providerId": "profile-8"
+    },
+    "scene.dispatch.model": {
+      "model": "deepseek-v4-pro",
+      "providerId": "profile-12"
+    },
+    "scene.loading.sprite": {
+      "model": "gemini-3.1-flash-lite",
+      "providerId": "profile-8"
+    },
+    "scene.memory.embedding": {
+      "model": "gemini-3.1-flash-lite",
+      "providerId": "profile-8"
+    },
+    "scene.memory.rollup": {
+      "model": "gemini-3.1-flash-lite",
+      "providerId": "profile-8"
+    },
+    "scene.vlm.operation.primary": {
+      "model": "gemini-3.1-flash-lite",
+      "providerId": "profile-8"
+    }
+  },
+  "sceneSettings": {
+    "scene.voice": {
+      "autoPlay": false,
+      "customStyle": "",
+      "stylePreset": "默认",
+      "voiceId": "default_zh"
+    }
+  }
+}

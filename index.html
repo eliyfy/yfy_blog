@@ -872,7 +872,7 @@
                 el.addEventListener('click', e => {
                     e.preventDefault();
                     const v = el.dataset.view;
-                    if ((v === 'toolbox' || v === 'timeline') && !isLoggedIn) return;
+                    if (v === 'toolbox' && !isLoggedIn) return;
                     switchView(v);
                 });
             });
@@ -939,7 +939,7 @@
             $('logoutBtn').addEventListener('click', () => {
                 setLoggedIn(false);
                 localStorage.removeItem('blog_login');
-                if ($('view-timeline')) $('view-timeline').classList.add('hidden');
+                
                 toast('已退出');
                 switchView('home');
             });
@@ -949,7 +949,7 @@
             isLoggedIn = val;
             if (val) {
                 $('loginBtn').style.display = 'none';
-                if ($('view-timeline')) $('view-timeline').classList.remove('hidden');
+                
                 $('loginStatus').style.display = 'flex';
                 $('loginDisplayName').textContent = ADMIN_USER;
                 $('navToolbox').style.display = 'inline-block';
@@ -1231,11 +1231,11 @@
         async function generateEmail() {
             if (!emailWorkerUrl) { toast('请先接入 Worker', 'e'); return; }
             try {
-                const res = await fetch(emailWorkerUrl + '/api/email/create', { method:'POST' });
+                const res = await fetch(emailWorkerUrl + '/api/email', { method:'POST' });
                 const data = await res.json();
                 const addr = data.address || data.email || data.data?.address || (typeof data === 'string' ? data : JSON.stringify(data));
                 currentEmail = addr;
-                $('emailAddress').textContent = '📫 ' + addr;
+                $('emailAddress').textContent = addr;
                 toast('已生成: ' + addr);
                 fetchInbox();
             } catch(e) {
@@ -1248,10 +1248,20 @@
             const list = $('emailInbox');
             const detail = $('emailDetail');
             detail.classList.remove('show');
+            // 先获取地址
+            try {
+                const ar = await fetch(emailWorkerUrl + '/api/address');
+                const ad = await ar.json();
+                const addr = ad.address || ad;
+                if (addr) {
+                    currentEmail = addr;
+                    $('emailAddress').textContent = addr;
+                }
+            } catch(e) {}
             detail.textContent = '';
             list.innerHTML = '<div style="font-size:.82rem;color:var(--text-dim);padding:8px 0">加载中...</div>';
             try {
-                const res = await fetch(emailWorkerUrl + '/api/email/list');
+                const res = await fetch(emailWorkerUrl + '/api/emails');
                 const data = await res.json();
                 const emails = data.emails || data.data || data.messages || [];
                 if (!emails.length) {

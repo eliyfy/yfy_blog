@@ -1,1 +1,0 @@
-"""weibo-hub scripts package."""

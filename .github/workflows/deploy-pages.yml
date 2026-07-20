@@ -1,0 +1,61 @@
+name: Deploy Blog to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Inject admin secrets into index.html
+        env:
+          ADMIN_USER: ${{ secrets.ADMIN_USER }}
+          ADMIN_PASS_HASH: ${{ secrets.ADMIN_PASS_HASH }}
+          BLOG_GH_TOKEN: ${{ secrets.BLOG_GH_TOKEN }}
+        run: |
+          python3 <<'PY'
+          import os, pathlib
+          p = pathlib.Path('index.html')
+          html = p.read_text(encoding='utf-8')
+          user = os.environ.get('ADMIN_USER') or 'admin'
+          h = os.environ.get('ADMIN_PASS_HASH') or '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9'
+          token = os.environ.get('BLOG_GH_TOKEN') or ''
+          def esc(s):
+              return s.replace('\\', '\\\\').replace("'", "\\'")
+          html = html.replace('%%ADMIN_USER%%', esc(user))
+          html = html.replace('%%ADMIN_PASS_HASH%%', esc(h))
+          html = html.replace('%%BLOG_GH_TOKEN%%', esc(token))
+          p.write_text(html, encoding='utf-8')
+          print('Injected ADMIN_USER=', user)
+          print('Injected PASS_HASH length=', len(h))
+          print('Injected TOKEN length=', len(token))
+          PY
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

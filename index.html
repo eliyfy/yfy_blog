@@ -765,7 +765,27 @@
         }
         .comment-del:hover { color: var(--accent); }
 
-</style>
+
+        .music-modal .search-row { display:flex; gap:8px; margin:12px 0; }
+        .music-modal .search-row input {
+            flex:1; padding:10px 12px; border:1px solid var(--border);
+            border-radius:8px; background:var(--bg); color:var(--text); font-size:.9rem;
+        }
+        .music-modal .search-row input:focus { outline:none; border-color:var(--text-secondary); }
+        .music-result-list { max-height:360px; overflow:auto; margin-top:8px; }
+        .music-result-item {
+            display:flex; align-items:center; gap:10px; padding:10px 8px;
+            border-bottom:1px solid var(--border); cursor:pointer; border-radius:8px;
+        }
+        .music-result-item:hover { background:var(--bg-soft); }
+        .music-result-item .idx { color:var(--text-secondary); width:22px; font-size:.8rem; text-align:right; }
+        .music-result-item .meta { flex:1; min-width:0; }
+        .music-result-item .meta .n { font-size:.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .music-result-item .meta .a { font-size:.75rem; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .music-result-empty { text-align:center; color:var(--text-secondary); padding:24px 8px; font-size:.85rem; }
+        .login-form .field small { display:block; margin-top:6px; color:var(--text-secondary); font-size:.72rem; line-height:1.4; }
+
+    </style>
 </head>
 <body>
     <div id="readingProgress"></div>
@@ -844,7 +864,7 @@
             <!-- GitHub -->
             <div class="tool-group">
                 <h3>GitHub</h3>
-                <div class="hint">使用 Personal Access Token 连接你的仓库</div>
+                <div class="hint">可选：填写 PAT 用于云端同步（登录后也可由 Secrets 自动注入）</div>
                 <div class="tool-row">
                     <input type="password" id="ghToken" placeholder="github_pat_..." />
                     <button class="btn btn-sm" id="ghConnectBtn">连接</button>
@@ -996,13 +1016,32 @@
             <div class="login-form">
                 <h3>管理员登录</h3>
                 <div class="field">
-                    <input type="text" id="loginUsername" placeholder="GitHub 用户名 (如 eliyfy)" />
+                    <input type="text" id="loginUsername" placeholder="管理员账号" autocomplete="username" />
                 </div>
                 <div class="field">
-                    <input type="password" id="loginPassword" placeholder="GitHub Token (PAT)" />
+                    <input type="password" id="loginPassword" placeholder="管理员密码" autocomplete="current-password" />
+                    <small>账号密码由 GitHub Secrets 在部署时注入，源码中不保存明文密码。</small>
                 </div>
                 <button class="btn" id="loginSubmitBtn" style="width:100%;margin-top:8px">登录</button>
                 <div class="login-error" id="loginError"></div>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- ========== MUSIC SEARCH MODAL ========== -->
+    <div class="modal-overlay" id="musicModal">
+        <div class="modal music-modal" style="max-width:420px">
+            <button class="modal-close" id="musicModalClose">&times;</button>
+            <div class="login-form" style="text-align:left">
+                <h3 style="text-align:center;margin-bottom:4px">搜索音乐</h3>
+                <div class="search-row">
+                    <input type="text" id="musicSearchInput" placeholder="歌名 / 歌手，如 周杰伦" />
+                    <button class="btn btn-sm" id="musicSearchGo">搜索</button>
+                </div>
+                <div class="music-result-list" id="musicResultList">
+                    <div class="music-result-empty">输入关键词搜索网易云曲库</div>
+                </div>
             </div>
         </div>
     </div>
@@ -1062,8 +1101,29 @@
         // ================================================================
         let currentView = 'home';
 
-        // GitHub token: retrieved from localStorage only
-        const getGHToken = () => localStorage.getItem('blog_gh_token') || localStorage.getItem('github_token') || '';
+        // 管理员配置：由 GitHub Actions 从 Secrets 注入（不要在源码写明文密码）
+        // Secrets: ADMIN_USER / ADMIN_PASS_HASH / BLOG_GH_TOKEN
+        const ADMIN_CFG = {
+            user: '%%ADMIN_USER%%',
+            passHash: '%%ADMIN_PASS_HASH%%',
+            ghToken: '%%BLOG_GH_TOKEN%%'
+        };
+        // 本地未部署替换时的兜底（仅方便预览；线上请用 Secrets）
+        if (ADMIN_CFG.user.indexOf('%%') === 0) ADMIN_CFG.user = 'admin';
+        if (ADMIN_CFG.passHash.indexOf('%%') === 0) ADMIN_CFG.passHash = '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9';
+        if (ADMIN_CFG.ghToken.indexOf('%%') === 0) ADMIN_CFG.ghToken = '';
+
+        const getGHToken = () =>
+            localStorage.getItem('blog_gh_token') ||
+            localStorage.getItem('github_token') ||
+            (ADMIN_CFG.ghToken || '') ||
+            '';
+
+        async function sha256Hex(text) {
+            const data = new TextEncoder().encode(text);
+            const buf = await crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
 
         let isLoggedIn = false;
         let articles = [];
@@ -1320,28 +1380,30 @@
         }
 
         // ================================================================
-        //  LOGIN
+        //  LOGIN  (账号密码，密码哈希由 Secrets 注入)
         // ================================================================
         function initLogin() {
             const savedLogin = localStorage.getItem('blog_login');
-            const savedToken = localStorage.getItem('blog_gh_token');
-            if (savedLogin === 'true' && savedToken) {
-                // Pre-auth locally saved token
+            if (savedLogin === 'true') {
                 isLoggedIn = true;
-                // mock name
-                const savedUser = localStorage.getItem('blog_gh_user') || 'eli';
+                const savedUser = localStorage.getItem('blog_admin_user') || ADMIN_CFG.user || 'admin';
                 $('loginBtn').style.display = 'none';
                 $('loginStatus').style.display = 'flex';
                 $('loginDisplayName').textContent = savedUser;
                 $('navToolbox').style.display = 'inline-block';
                 $('homeToolbox').style.display = 'flex';
                 $('writeArticleBtn').style.display = 'inline-block';
+                // 若 Secrets 注入了 Token，自动填到工具箱
+                if (ADMIN_CFG.ghToken && $('ghToken') && !$('ghToken').value) {
+                    $('ghToken').value = ADMIN_CFG.ghToken;
+                    localStorage.setItem('blog_gh_token', ADMIN_CFG.ghToken);
+                }
             }
 
             $('loginBtn').addEventListener('click', () => {
                 if (isLoggedIn) return;
                 $('loginModal').classList.add('open');
-                $('loginUsername').value = localStorage.getItem('blog_gh_user') || '';
+                $('loginUsername').value = localStorage.getItem('blog_admin_user') || ADMIN_CFG.user || '';
                 $('loginPassword').value = '';
                 $('loginError').textContent = '';
                 $('loginPassword').focus();
@@ -1356,38 +1418,35 @@
 
             $('loginSubmitBtn').addEventListener('click', async () => {
                 const u = $('loginUsername').value.trim();
-                const token = $('loginPassword').value.trim();
-                if (!u || !token) {
-                    $('loginError').textContent = '请输入用户名和 GitHub Token';
+                const p = $('loginPassword').value;
+                if (!u || !p) {
+                    $('loginError').textContent = '请输入账号和密码';
                     return;
                 }
-                
+
                 $('loginSubmitBtn').textContent = '验证中...';
                 $('loginError').textContent = '';
-                
+
                 try {
-                    const res = await fetch('https://api.github.com/user', {
-                        headers: { 'Authorization': `token ${token}` }
-                    });
-                    if (res.ok) {
-                        const userData = await res.json();
-                        // Verify that the logged in user matches or has repo access
-                        // To make it flexible, we verify the username or simply accept it as long as token is valid
+                    const hash = await sha256Hex(p);
+                    const userOk = u === ADMIN_CFG.user;
+                    const passOk = hash === ADMIN_CFG.passHash;
+                    if (userOk && passOk) {
                         $('loginModal').classList.remove('open');
-                        setLoggedIn(true);
                         localStorage.setItem('blog_login', 'true');
-                        localStorage.setItem('blog_gh_token', token);
-                        localStorage.setItem('blog_gh_user', u);
-                        
-                        // Sync token to tool page input
-                        if ($('ghToken')) $('ghToken').value = token;
-                        
-                        toast('🔑 登录校验成功！已取得云端权限');
+                        localStorage.setItem('blog_admin_user', u);
+                        // 登录成功后自动启用 Secrets 中的云端 Token（若有）
+                        if (ADMIN_CFG.ghToken) {
+                            localStorage.setItem('blog_gh_token', ADMIN_CFG.ghToken);
+                            if ($('ghToken')) $('ghToken').value = ADMIN_CFG.ghToken;
+                        }
+                        setLoggedIn(true);
+                        toast('登录成功');
                     } else {
-                        $('loginError').textContent = 'GitHub 校验失败：Token 无效或已过期';
+                        $('loginError').textContent = '账号或密码错误';
                     }
-                } catch(err) {
-                    $('loginError').textContent = '网络错误，无法连接 GitHub: ' + err.message;
+                } catch (err) {
+                    $('loginError').textContent = '验证失败: ' + err.message;
                 } finally {
                     $('loginSubmitBtn').textContent = '登录';
                 }
@@ -1403,9 +1462,9 @@
             $('logoutBtn').addEventListener('click', () => {
                 setLoggedIn(false);
                 localStorage.removeItem('blog_login');
-                localStorage.removeItem('blog_gh_token');
-                localStorage.removeItem('blog_gh_user');
-                toast('已安全登出');
+                localStorage.removeItem('blog_admin_user');
+                // 不强制清除用户手动保存的 token；若 token 来自 secrets 注入也可保留到下次登录
+                toast('已登出');
             });
         }
 
@@ -1414,7 +1473,7 @@
             if (val) {
                 $('loginBtn').style.display = 'none';
                 $('loginStatus').style.display = 'flex';
-                $('loginDisplayName').textContent = localStorage.getItem('blog_gh_user') || 'eli';
+                $('loginDisplayName').textContent = localStorage.getItem('blog_admin_user') || ADMIN_CFG.user || 'admin';
                 $('navToolbox').style.display = 'inline-block';
                 $('homeToolbox').style.display = 'flex';
                 $('writeArticleBtn').style.display = 'inline-block';
@@ -1916,79 +1975,175 @@
         }
 
         // ================================================================
-        //  MUSIC PLAYER
+        //  MUSIC PLAYER  (Meting 多源：搜索 + 默认歌单)
         // ================================================================
-        const MUSIC_SORTS = ['热歌榜','新歌榜','飙升榜','抖音榜','电音榜'];
+        const METING_ENDPOINTS = [
+            'https://api.qijieya.cn/meting/',
+            'https://api.injahow.cn/meting/'
+        ];
+        // 默认热门曲目 id（网易云），API 可用时解析真实播放地址
+        const DEFAULT_SONG_IDS = [
+            1330348068, // 起风了
+            474436604,  // 光年之外
+            1397345903, // 我曾
+            1405283464, // 海底
+            1293886117, // 像我这样的人
+            1363948882, // 知否知否
+            1824044034, // 踏山河
+            1859245776  // 孤勇者
+        ];
+        // 绝对可播的公开示例音频（API 全挂时兜底）
+        const FALLBACK_FREE = [
+            { name: 'SoundHelix Song 1', artist: 'SoundHelix', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
+            { name: 'SoundHelix Song 2', artist: 'SoundHelix', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' },
+            { name: 'SoundHelix Song 3', artist: 'SoundHelix', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3' }
+        ];
+
+        let musicSearchResults = [];
+
+        function metingUrl(pathQuery) {
+            // pathQuery like ?server=netease&type=search&id=xxx
+            return METING_ENDPOINTS.map(base => base + (pathQuery.startsWith('?') ? pathQuery : '?' + pathQuery));
+        }
+
+        async function fetchJsonFirst(urls, timeoutMs) {
+            const ms = timeoutMs || 9000;
+            let lastErr = null;
+            for (const url of urls) {
+                try {
+                    const ctrl = new AbortController();
+                    const t = setTimeout(() => ctrl.abort(), ms);
+                    const res = await fetch(url, { signal: ctrl.signal });
+                    clearTimeout(t);
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return await res.json();
+                } catch (e) {
+                    lastErr = e;
+                }
+            }
+            throw lastErr || new Error('全部接口失败');
+        }
+
+        function normalizeSong(s) {
+            if (!s) return null;
+            const name = s.name || s.title || s.song || '未知歌曲';
+            const artist = s.artist || s.author || s.artistsname || s.singer || '未知歌手';
+            let url = s.url || s.music || '';
+            // 若只有 id，拼 meting 播放代理
+            const id = s.id || (url && String(url).match(/id=(\d+)/)?.[1]);
+            if ((!url || url === '#') && id) {
+                url = METING_ENDPOINTS[0] + '?server=netease&type=url&id=' + id;
+            }
+            if (!url) return null;
+            return {
+                name,
+                artist,
+                url,
+                pic: s.pic || s.cover || s.album?.picUrl || '',
+                id: id || ''
+            };
+        }
 
         function initMusic() {
             audio = new Audio();
             audio.volume = 0.6;
+            audio.preload = 'metadata';
+            audio.crossOrigin = 'anonymous';
 
-            // Load playlist
             loadMusicPlaylist();
 
-            // Controls
             $('playBtn').addEventListener('click', togglePlay);
-            $('nextBtn').addEventListener('click', () => playIndex(musicIndex + 1));
-            $('prevBtn').addEventListener('click', () => playIndex(musicIndex - 1));
+            $('nextBtn').addEventListener('click', () => playIndex(musicIndex + 1, true));
+            $('prevBtn').addEventListener('click', () => playIndex(musicIndex - 1, true));
 
-            // Progress bar
             audio.addEventListener('timeupdate', () => {
                 if (audio.duration) {
                     const pct = (audio.currentTime / audio.duration) * 100;
                     $('progressBar').style.width = pct + '%';
                 }
             });
-            audio.addEventListener('ended', () => playIndex(musicIndex + 1));
+            audio.addEventListener('ended', () => playIndex(musicIndex + 1, true));
+            audio.addEventListener('error', () => {
+                // 当前源失败时自动切下一首
+                if (musicPlaylist.length > 1) {
+                    toast('当前曲目无法播放，尝试下一首', 'e');
+                    setTimeout(() => playIndex(musicIndex + 1, true), 400);
+                } else {
+                    $('playBtn').textContent = '|>';
+                    toast('播放失败，请换一首', 'e');
+                }
+            });
+            audio.addEventListener('play', () => { $('playBtn').textContent = '||'; });
+            audio.addEventListener('pause', () => { $('playBtn').textContent = '|>'; });
 
             $('playerProgress').addEventListener('click', e => {
                 const rect = e.currentTarget.getBoundingClientRect();
                 const pct = (e.clientX - rect.left) / rect.width;
-                if (audio.duration) {
-                    audio.currentTime = pct * audio.duration;
-                }
+                if (audio.duration) audio.currentTime = pct * audio.duration;
             });
 
-            // Toggle collapse
             $('playerToggle').addEventListener('click', () => {
                 $('playerWrap').classList.toggle('collapsed');
                 $('playerToggle').textContent = $('playerWrap').classList.contains('collapsed') ? '>' : '<';
             });
 
-            // Search
-            $('searchMusicBtn').addEventListener('click', musicSearch);
+            // Search modal
+            $('searchMusicBtn').addEventListener('click', openMusicSearch);
+            $('musicModalClose').addEventListener('click', () => $('musicModal').classList.remove('open'));
+            $('musicModal').addEventListener('click', e => {
+                if (e.target === $('musicModal')) $('musicModal').classList.remove('open');
+            });
+            $('musicSearchGo').addEventListener('click', doMusicSearch);
+            $('musicSearchInput').addEventListener('keydown', e => {
+                if (e.key === 'Enter') doMusicSearch();
+            });
+        }
+
+        function openMusicSearch() {
+            $('musicModal').classList.add('open');
+            $('musicSearchInput').value = '';
+            $('musicResultList').innerHTML = '<div class="music-result-empty">输入关键词搜索网易云曲库</div>';
+            setTimeout(() => $('musicSearchInput').focus(), 50);
         }
 
         async function loadMusicPlaylist() {
+            $('songName').textContent = '加载歌单...';
+            $('artistName').textContent = '-';
             const songs = [];
-            for (const sort of MUSIC_SORTS) {
+
+            // 并行拉取默认热门曲目元数据
+            const tasks = DEFAULT_SONG_IDS.map(async id => {
                 try {
-                    const res = await fetch('https://api.uomg.com/api/rand.music?sort=' + encodeURIComponent(sort) + '&format=json');
-                    const data = await res.json();
-                    if (data.code === 1 && data.data && data.data.url) {
-                        songs.push({
-                            name: data.data.name || '未知歌曲',
-                            artist: data.data.artistsname || data.data.singername || '未知歌手',
-                            url: data.data.url,
-                            pic: data.data.pic || ''
-                        });
-                    }
-                } catch(e) {}
-            }
-            if (songs.length > 0) {
+                    const data = await fetchJsonFirst(
+                        metingUrl('?server=netease&type=song&id=' + id),
+                        7000
+                    );
+                    const arr = Array.isArray(data) ? data : (data ? [data] : []);
+                    const n = normalizeSong(arr[0] || { id, name: '歌曲' + id });
+                    if (n) songs.push(n);
+                } catch (e) {}
+            });
+            await Promise.all(tasks);
+
+            if (songs.length) {
                 musicPlaylist = songs;
-                playIndex(0);
             } else {
-                // Fallback - use some built-in free music URLs
-                musicPlaylist = [
-                    { name:'起风了', artist:'买辣椒也用券', url:'https://music.163.com/song/media/outer/url?id=1330348068.mp3' },
-                    { name:'光年之外', artist:'G.E.M.邓紫棋', url:'https://music.163.com/song/media/outer/url?id=474436604.mp3' },
-                ];
-                playIndex(0);
+                musicPlaylist = FALLBACK_FREE.slice();
+                toast('音乐接口暂不可用，已加载本地兜底歌单');
             }
+
+            // 只准备第一首，不强制 autoplay（浏览器会拦截）
+            musicIndex = 0;
+            const s = musicPlaylist[0];
+            $('songName').textContent = s.name;
+            $('artistName').textContent = s.artist;
+            $('playBtn').textContent = '|>';
+            try {
+                audio.src = s.url;
+            } catch (e) {}
         }
 
-        function playIndex(idx) {
+        function playIndex(idx, autoPlay) {
             if (!musicPlaylist.length) return;
             if (idx < 0) idx = musicPlaylist.length - 1;
             if (idx >= musicPlaylist.length) idx = 0;
@@ -1996,70 +2151,96 @@
             const song = musicPlaylist[idx];
             $('songName').textContent = song.name;
             $('artistName').textContent = song.artist;
-            $('playBtn').textContent = '...';
+            $('progressBar').style.width = '0%';
+
             try {
-                audio.src = song.url;
-                audio.play().then(() => {
-                    $('playBtn').textContent = '||'; // pause
-                }).catch(() => {
+                if (audio.src !== song.url) {
+                    audio.src = song.url;
+                }
+                if (autoPlay !== false) {
                     $('playBtn').textContent = '...';
-                });
-            } catch(e) {
-                $('playBtn').textContent = '...';
+                    const p = audio.play();
+                    if (p && p.then) {
+                        p.then(() => {
+                            $('playBtn').textContent = '||';
+                        }).catch(err => {
+                            $('playBtn').textContent = '|>';
+                            // 自动播放被拦截时提示用户点一次
+                            if (err && (err.name === 'NotAllowedError' || String(err).includes('NotAllowed'))) {
+                                toast('请点击播放按钮开始听歌');
+                            }
+                        });
+                    }
+                } else {
+                    $('playBtn').textContent = '|>';
+                }
+            } catch (e) {
+                $('playBtn').textContent = '|>';
             }
         }
 
         function togglePlay() {
-            if (!audio.src) { playIndex(musicIndex); return; }
+            if (!musicPlaylist.length) {
+                loadMusicPlaylist();
+                return;
+            }
+            if (!audio.src) {
+                playIndex(musicIndex, true);
+                return;
+            }
             if (audio.paused) {
-                audio.play().then(() => $('playBtn').textContent = '⏸').catch(()=>{});
+                audio.play().then(() => {
+                    $('playBtn').textContent = '||';
+                }).catch(() => {
+                    // src 失效时重载当前项
+                    playIndex(musicIndex, true);
+                });
             } else {
                 audio.pause();
-                $('playBtn').textContent = '...';
+                $('playBtn').textContent = '|>';
             }
         }
 
-        // Music search using uomg API
-        async function musicSearch() {
-            const keyword = prompt('搜索歌曲：');
-            if (!keyword || !keyword.trim()) return;
-            toast('正在搜索...');
+        async function doMusicSearch() {
+            const keyword = ($('musicSearchInput').value || '').trim();
+            if (!keyword) {
+                toast('请输入关键词', 'e');
+                return;
+            }
+            const list = $('musicResultList');
+            list.innerHTML = '<div class="music-result-empty">搜索中…</div>';
             try {
-                // Using Meting Netease Search API (Zero CORS restriction)
-                const searchUrl = 'https://api.i-meto.com/meting/api?server=netease&type=search&keyword=' + encodeURIComponent(keyword.trim());
-                const res = await fetch(searchUrl);
-                const results = await res.json();
-                
-                if (results && results.length) {
-                    const sliced = results.slice(0, 10);
-                    let msg = '搜索结果：\n';
-                    sliced.forEach((s, i) => {
-                        msg += (i+1) + '. ' + s.title + ' - ' + s.author + '\n';
-                    });
-                    msg += '\n输入序号播放 (1-' + sliced.length + ')，或取消';
-                    
-                    const choice = prompt(msg);
-                    const idx = parseInt(choice) - 1;
-                    if (idx >= 0 && idx < sliced.length) {
-                        const s = sliced[idx];
-                        // Extract netease play url directly or fallback
-                        const playUrl = s.url || `https://music.163.com/song/media/outer/url?id=${s.id}.mp3`;
-                        
-                        // Populate music playlist
-                        musicPlaylist = [{
-                            name: s.title || '未知歌名',
-                            artist: s.author || '未知歌手',
-                            url: playUrl,
-                            pic: s.pic || ''
-                        }];
-                        playIndex(0);
-                        toast('开始播放: ' + (s.title));
-                    }
-                } else {
-                    toast('未搜索到相关歌曲', 'e');
+                const data = await fetchJsonFirst(
+                    metingUrl('?server=netease&type=search&id=' + encodeURIComponent(keyword)),
+                    10000
+                );
+                const arr = Array.isArray(data) ? data : [];
+                musicSearchResults = arr.map(normalizeSong).filter(Boolean).slice(0, 30);
+                if (!musicSearchResults.length) {
+                    list.innerHTML = '<div class="music-result-empty">没有搜到相关歌曲</div>';
+                    return;
                 }
-            } catch(e) {
-                toast('搜索失败: ' + e.message, 'e');
+                list.innerHTML = musicSearchResults.map((s, i) =>
+                    '<div class="music-result-item" data-i="' + i + '">' +
+                    '<span class="idx">' + (i + 1) + '</span>' +
+                    '<div class="meta"><div class="n">' + escHtml(s.name) + '</div>' +
+                    '<div class="a">' + escHtml(s.artist) + '</div></div></div>'
+                ).join('');
+                list.querySelectorAll('.music-result-item').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const i = parseInt(el.getAttribute('data-i'), 10);
+                        const song = musicSearchResults[i];
+                        if (!song) return;
+                        // 把搜索结果整页加入播放列表，从点选曲目开始播
+                        musicPlaylist = musicSearchResults.slice();
+                        playIndex(i, true);
+                        $('musicModal').classList.remove('open');
+                        toast('开始播放: ' + song.name);
+                    });
+                });
+            } catch (e) {
+                list.innerHTML = '<div class="music-result-empty">搜索失败：' + escHtml(e.message || String(e)) + '</div>';
+                toast('搜索失败', 'e');
             }
         }
 

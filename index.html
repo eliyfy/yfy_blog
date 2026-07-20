@@ -658,6 +658,113 @@
             margin-right: 6px; vertical-align: middle;
         }
 
+        /* ===== 留言评论 ===== */
+        .comment-section {
+            margin-top: 40px;
+            padding-top: 28px;
+            border-top: 2px solid var(--border);
+        }
+        .comment-section h3 {
+            font-size: 1.15rem;
+            margin-bottom: 20px;
+            color: var(--text);
+            font-weight: 600;
+        }
+        .comment-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+        .comment-form-row {
+            display: flex;
+            gap: 12px;
+        }
+        .comment-form-row input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: var(--text);
+            font-size: .9rem;
+        }
+        .comment-form textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: var(--text);
+            font-size: .9rem;
+            resize: vertical;
+            font-family: inherit;
+        }
+        .comment-form-row input:focus,
+        .comment-form textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .comment-submit-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .comment-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .comment-item {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 16px 20px;
+            border: 1px solid var(--border);
+        }
+        .comment-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .comment-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .8rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .comment-meta strong {
+            font-size: .9rem;
+            color: var(--text);
+        }
+        .comment-date {
+            font-size: .78rem;
+            color: var(--text-dim);
+            margin-left: auto;
+        }
+        .comment-body {
+            font-size: .92rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+        .comment-actions {
+            margin-top: 8px;
+        }
+        .comment-del {
+            font-size: .78rem;
+            color: var(--text-dim);
+            cursor: pointer;
+        }
+        .comment-del:hover { color: var(--accent); }
+
 </style>
 </head>
 <body>
@@ -671,6 +778,7 @@
                 <a href="#" data-view="articles">文章</a>
                 <a href="#" data-view="toolbox" id="navToolbox" style="display:none">工具箱</a>
                 <a href="#" data-view="about">关于</a>
+                <a href="#" data-view="guestbook">留言</a>
                 <span class="nav-sep"></span>
                 <button class="theme-btn" id="themeToggle" aria-label="切换主题">○</button>
                 <button id="loginBtn">登录</button>
@@ -746,7 +854,55 @@
 
             </section>
 
+        
+        <!-- ========== VIEW: ARTICLE DETAIL (INDEPENDENT PAGE) ========== -->
+        <section class="view" id="view-article-detail">
+            <div style="margin-bottom: 24px;">
+                <button class="btn btn-sm btn-outline" onclick="switchView('articles')" style="cursor:pointer;">← 返回文章列表</button>
+            </div>
+            <article class="standalone-article">
+                <h1 id="detailTitle" style="font-family:var(--font-serif); font-size: 2rem; font-weight:700; margin-bottom: 12px; color:var(--text); line-height: 1.3;"></h1>
+                <div class="art-meta" id="detailMeta" style="font-size: .85rem; color: var(--text-dim); margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid var(--border);"></div>
+                <div class="art-content" id="detailContent" style="font-size: 1.02rem; line-height: 1.95; color: var(--text);"></div>
+            </article>
+            <!-- ===== 留言区 ===== -->
+            <div class="comment-section">
+                <h3>💬 留言</h3>
+                <div class="comment-form">
+                    <div class="comment-form-row">
+                        <input type="text" id="commentName" placeholder="你的昵称" maxlength="20" />
+                    </div>
+                    <textarea id="commentText" placeholder="说点什么…" maxlength="1000"></textarea>
+                    <div class="comment-submit-row">
+                        <button class="btn btn-sm" onclick="submitComment()">发表留言</button>
+                        <span style="font-size:.78rem;color:var(--text-dim);">你留下的每一条留言都会同步到云端</span>
+                    </div>
+                </div>
+                <div class="comment-list" id="commentList"></div>
+            </div>
+        </section>
+
         <!-- ========== VIEW: ABOUT ========== -->
+        
+        <!-- ========== VIEW: GUESTBOOK ========== -->
+        <section class="view" id="view-guestbook">
+            <div class="page-header">
+                <h2>留言板</h2>
+            </div>
+            <div class="reveal" style="margin-bottom: 24px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 6px; padding: 20px;">
+                <h3 style="margin-bottom: 12px; font-size: .95rem; font-weight: 500;">留下你想说的话 ✨</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" id="msgNick" placeholder="昵称" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); font-size: .85rem;" />
+                    <input type="text" id="msgAvatar" placeholder="头像关键字 (如 cat, dev 等，选填)" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); font-size: .85rem;" />
+                </div>
+                <textarea id="msgContent" placeholder="在此写下你的留言... (支持 Markdown)" style="width: 100%; min-height: 80px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); font-size: .85rem; resize: vertical; margin-bottom: 10px; font-family: inherit;"></textarea>
+                <div style="display: flex; justify-content: flex-end;">
+                    <button class="btn btn-sm" id="msgSubmitBtn" style="cursor: pointer;">提交留言</button>
+                </div>
+            </div>
+            <div id="guestbookList"></div>
+        </section>
+
         <section class="view" id="view-about">
             <div class="page-header">
                 <h2>关于</h2>
@@ -905,6 +1061,10 @@
         //  STATE
         // ================================================================
         let currentView = 'home';
+
+        // GitHub token: retrieved from localStorage only
+        const getGHToken = () => localStorage.getItem('blog_gh_token') || localStorage.getItem('github_token') || '';
+
         let isLoggedIn = false;
         let articles = [];
         let editingId = null;
@@ -935,20 +1095,34 @@
             initQuote();
             initOptimizations();
             initMarkdownEditor();
+            initGuestbook();
             renderHomeRecent();
             renderArticleList();
             renderTimelineList();
+            handleRouteHash();
+            window.addEventListener('hashchange', handleRouteHash);
         });
+
+        function handleRouteHash() {
+            const hash = window.location.hash.replace(/^#/, '');
+            if (hash.startsWith('article/')) {
+                const artId = hash.replace('article/', '');
+                openArticle(artId);
+            }
+        }
 
         // ====== IndexedDB 存储 ======
         let db;
         function initDB() {
             return new Promise((ok, fail) => {
-                const r = indexedDB.open('yfy_blog', 2);
+                const r = indexedDB.open('yfy_blog', 3);
                 r.onupgradeneeded = e => {
                     const d = e.target.result;
                     if (!d.objectStoreNames.contains('articles')) {
                         d.createObjectStore('articles', { keyPath: 'id' });
+                    }
+                    if (!d.objectStoreNames.contains('comments')) {
+                        d.createObjectStore('comments', { keyPath: 'id' });
                     }
                 };
                 r.onsuccess = e => { db = e.target.result; ok(); };
@@ -1033,10 +1207,9 @@
         function renderTimelineList() {
             const list = $('timelineList');
             if (!list) return;
-            const tl = $('timelineView');
+            const tl = $('view-timeline');
             if (!tl) return;
-            tl.classList.toggle('hidden', !isLoggedIn);
-            if (!isLoggedIn) return;
+            // Everyone can view timeline
 
             if (!articles.length) {
                 list.innerHTML = '<div class="tl-empty">时间线为空，写点东西吧</div>';
@@ -1302,63 +1475,64 @@
             });
         }
 
-        function renderArticleList() {
-            const list = $('articleList');
+                function renderArticleList(filterText) {
+            const container = $('articleList');
+            if (!container) return;
             if (!articles.length) {
-                list.innerHTML = '<div class="empty-state">还没有文章</div>';
+                container.innerHTML = '<div class="empty-state">还没有文章</div>';
                 return;
             }
-            let html = '';
-            articles.slice().reverse().forEach((a, idx) => {
-                const realIdx = articles.length - 1 - idx;
-                const excerpt = a.content.length > 80 ? a.content.slice(0,80) + '…' : a.content;
-                html += '<div class="article-item">' +
-                    '<div class="art-title clickable" data-idx="' + realIdx + '">' + escHtml(a.title) + '</div>' +
-                    '<div class="art-meta">' +
-                    (a.tag ? '<span class="tag">' + escHtml(a.tag) + '</span>' : '') +
-                    '<span>' + a.date + '</span>' +
-                    '<span>' + Math.max(1, Math.ceil(a.content.length / 400)) + ' min read</span>' +
-                    '</div>';
-                if (isLoggedIn) {
-                    html += '<div class="art-actions">' +
-                        '<button class="edit-btn" data-idx="' + realIdx + '">编辑</button>' +
-                        '<button class="del-btn" data-idx="' + realIdx + '">删除</button>' +
-                        '</div>';
-                }
-                html += '</div>';
-            });
-            list.innerHTML = html;
 
-            // Click title to read
-            list.querySelectorAll('.art-title.clickable').forEach(el => {
-                el.addEventListener('click', () => {
-                    const idx = parseInt(el.dataset.idx);
-                    openArticle(idx);
-                });
-            });
+            let filtered = articles.slice().reverse();
+            if (filterText && filterText.trim()) {
+                const q = filterText.trim().toLowerCase();
+                filtered = filtered.filter(a =>
+                    (a.title || '').toLowerCase().includes(q) ||
+                    (a.tag || '').toLowerCase().includes(q) ||
+                    (a.content || '').toLowerCase().includes(q)
+                );
+            }
 
-            // Edit/Delete
-            if (isLoggedIn) {
-                list.querySelectorAll('.edit-btn').forEach(el => {
-                    el.addEventListener('click', e => {
-                        e.stopPropagation();
-                        const idx = parseInt(el.dataset.idx);
-                        openEditor(idx);
-                    });
-                });
-                list.querySelectorAll('.del-btn').forEach(el => {
-                    el.addEventListener('click', e => {
-                        e.stopPropagation();
-                        const idx = parseInt(el.dataset.idx);
-                        if (confirm('确定删除「' + articles[idx].title + '」？')) {
-                            articles.splice(idx, 1);
-                            saveState();
-                            renderArticleList();
-            renderTimelineList();
-                            renderHomeRecent();
-                            toast('已删除');
-                        }
-                    });
+            let searchHtml = '<div class="search-bar">' +
+                '<input type="text" id="articleSearchInput" placeholder="⌕ 搜索文章标题、内容或标签..." value="' + escHtml(filterText || '') + '" />' +
+                '</div>';
+
+            if (!filtered.length) {
+                container.innerHTML = searchHtml + '<div class="no-results">没有找到匹配的文章</div>';
+                bindSearchInput();
+                return;
+            }
+
+            let listHtml = '<div class="standalone-art-list" style="display:flex; flex-direction:column; gap:20px; margin-top:20px;">';
+            filtered.forEach((a) => {
+                const realIdx = articles.indexOf(a);
+                const wordCount = (a.content || '').replace(/<[^>]*>/g,'').length;
+                const readMin = Math.max(1, Math.round(wordCount / 400));
+                const excerptText = escHtml((a.content || '').replace(/#|\*|`|>|\[|\]/g, '').slice(0, 140)) + '...';
+
+                listHtml += '<article class="art-entry" style="padding-bottom:20px; border-bottom:1px solid var(--border); transition:all .2s;">' +
+                    '<div style="font-size:.78rem; color:var(--text-dim); font-family:var(--font-mono); margin-bottom:6px;">' + (a.date || '') + (a.tag ? ' · ' + escHtml(a.tag) : '') + ' · ' + readMin + ' min read</div>' +
+                    '<h2 style="font-size:1.25rem; font-weight:600; color:var(--text); margin-bottom:8px; cursor:pointer;" onclick="openArticle(' + realIdx + ')">' + escHtml(a.title) + '</h2>' +
+                    '<div style="font-size:.9rem; color:var(--text-secondary); line-height:1.6; margin-bottom:12px; cursor:pointer;" onclick="openArticle(' + realIdx + ')">' + excerptText + '</div>' +
+                    '<div><a href="javascript:void(0)" onclick="openArticle(' + realIdx + ')" style="font-size:.85rem; color:var(--accent); text-decoration:none; font-weight:500;">阅读全文 →</a></div>' +
+                    '</article>';
+            });
+            listHtml += '</div>';
+
+            container.innerHTML = searchHtml + listHtml;
+            bindSearchInput();
+        }
+
+        function bindSearchInput() {
+            const input = $('articleSearchInput');
+            if (input) {
+                input.addEventListener('input', () => {
+                    renderArticleList(input.value);
+                    const newInp = $('articleSearchInput');
+                    if (newInp) {
+                        newInp.focus();
+                        newInp.setSelectionRange(newInp.value.length, newInp.value.length);
+                    }
                 });
             }
         }
@@ -1381,64 +1555,68 @@
             list.innerHTML = html;
         }
 
-        function openArticle(idx) {
-            const a = articles[idx];
-            if (!a) return;
-            $('modalTitle').textContent = a.title;
-            
-            const wordCount = a.content.replace(/<[^>]*>/g, '').length;
-            const readMin = Math.max(1, Math.ceil(wordCount / 400));
-            $('modalMeta').textContent = (a.tag ? a.tag + ' · ' : '') + a.date + ' · ' + readMin + ' min read';
-            
-            // Render with marked.js GFM
-            let renderedHtml = '';
-            if (typeof marked !== 'undefined') {
-                renderedHtml = marked.parse(a.content);
+                function openArticle(idxOrId) {
+            let a = null;
+            if (typeof idxOrId === 'number') {
+                a = articles[idxOrId];
             } else {
-                renderedHtml = escHtml(a.content).replace(/\n/g, '<br/>');
+                a = articles.find(item => item.id === idxOrId) || articles[idxOrId];
             }
-            
-            // Extract TOC from rendered H1, H2, H3
+            if (!a) return;
+
+            $('detailTitle').textContent = a.title;
+            const wordCount = (a.content || '').replace(/<[^>]*>/g, '').length;
+            const readMin = Math.max(1, Math.ceil(wordCount / 400));
+            $('detailMeta').textContent = (a.tag ? a.tag + ' · ' : '') + (a.date || '') + ' · ' + readMin + ' min read';
+
+            let rawHtml = '';
+            if (typeof marked !== 'undefined') {
+                rawHtml = marked.parse(a.content || '');
+            } else {
+                rawHtml = escHtml(a.content || '').replace(/\n/g, '<br/>');
+            }
+
             const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = renderedHtml;
+            tempDiv.innerHTML = rawHtml;
             const headers = tempDiv.querySelectorAll('h1, h2, h3');
             let tocHtml = '';
-            
-            if (headers.length >= 2) {
+            if (headers.length > 0) {
                 tocHtml = '<div class="toc-wrap"><div class="toc-title">📑 目录</div>';
                 headers.forEach((h, hIdx) => {
                     const id = 'toc-anchor-' + hIdx;
                     h.setAttribute('id', id);
-                    const levelClass = h.tagName === 'H3' ? 'toc-h3' : 'toc-h2';
-                    tocHtml += '<a href="#" class="' + levelClass + '" data-toc="' + id + '">' + escHtml(h.textContent) + '</a>';
+                    const levelClass = h.tagName === 'H3' ? 'toc-h3' : '';
+                    tocHtml += '<a href="#' + id + '" class="' + levelClass + '" data-toc="' + id + '">' + escHtml(h.textContent) + '</a>';
                 });
                 tocHtml += '</div>';
             }
-            
-            $('modalContent').innerHTML = tocHtml + tempDiv.innerHTML;
-            
-            // Code block highlighting
+
+            $('detailContent').innerHTML = tocHtml + tempDiv.innerHTML;
+
             if (typeof hljs !== 'undefined') {
-                $('modalContent').querySelectorAll('pre code').forEach((block) => {
+                $('detailContent').querySelectorAll('pre code').forEach(block => {
                     hljs.highlightElement(block);
                 });
             }
-            
-            // Bind TOC scroll
-            $('modalContent').querySelectorAll('.toc-wrap a').forEach(link => {
+
+            // Bind TOC scroll jump
+            $('detailContent').querySelectorAll('.toc-wrap a[data-toc]').forEach(link => {
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
                     const targetId = link.getAttribute('data-toc');
-                    const targetEl = $('modalContent').querySelector('#' + targetId);
+                    const targetEl = document.getElementById(targetId);
                     if (targetEl) {
-                        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        targetEl.scrollIntoView({ behavior: 'smooth' });
                     }
                 });
             });
-            
-            $('articleModal').classList.add('open');
-            initReadingProgress();
-            if (typeof initLightbox === 'function') initLightbox();
+
+            // Switch to standalone article detail view
+            switchView('article-detail');
+            window.location.hash = 'article/' + (a.id || idxOrId);
+
+            // Load comments for this article
+            loadComments(a.id);
         }
 
         function openEditor(idx) {
@@ -1595,6 +1773,145 @@
                 toast('已加载 ' + repos.length + ' 个仓库');
             } catch(e) {
                 $('ghRepoList').innerHTML = '<div style="font-size:.82rem;color:#b91c1c">连接失败: ' + e.message + '</div>';
+            }
+        }
+
+
+        // ================================================================
+        //  GUESTBOOK SYSTEM (GitHub JSON Storage)
+        // ================================================================
+        let messages = [];
+
+        function initGuestbook() {
+            $('msgSubmitBtn').addEventListener('click', submitMessage);
+            loadMessages();
+        }
+
+        async function loadMessages() {
+            const list = $('guestbookList');
+            if (!list) return;
+            list.innerHTML = '<div style="font-size:.82rem;color:var(--text-dim);padding:8px 0">留言加载中...</div>';
+            try {
+                const res = await fetch('https://raw.githubusercontent.com/eliyfy/yfy_blog/main/guestbook.json?t=' + Date.now());
+                if (res.status === 404) {
+                    messages = [];
+                    list.innerHTML = '<div style="font-size:.82rem;color:var(--text-dim);padding:8px 0">暂无留言，快来抢沙发吧~</div>';
+                    return;
+                }
+                messages = await res.json();
+                renderMessages();
+            } catch (e) {
+                list.innerHTML = '<div style="font-size:.82rem;color:var(--text-dim);padding:8px 0">暂无留言，快来抢沙发吧~</div>';
+            }
+        }
+
+        function renderMessages() {
+            const list = $('guestbookList');
+            if (!list || !messages.length) {
+                list.innerHTML = '<div style="font-size:.82rem;color:var(--text-dim);padding:8px 0">暂无留言，快来抢沙发吧~</div>';
+                return;
+            }
+            let html = '';
+            messages.slice().reverse().forEach(m => {
+                const nick = escHtml(m.nick || '匿名网友');
+                const contentHtml = typeof marked !== 'undefined' ? marked.parse(m.content) : escHtml(m.content);
+                const date = m.date || '';
+                const avatar = 'https://api.dicebear.com/7.x/identicon/svg?seed=' + encodeURIComponent(m.avatar || nick);
+                
+                html += '<div class="reveal" style="display: flex; gap: 14px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 16px;">' +
+                    '<img src="' + avatar + '" style="width: 36px; height: 36px; border-radius: 50%; background: var(--bg-soft); border: 1px solid var(--border);" />' +
+                    '<div style="flex: 1;">' +
+                    '<div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">' +
+                    '<span style="font-weight: 500; font-size: .88rem; color: var(--text);">' + nick + '</span>' +
+                    '<span style="font-size: .72rem; color: var(--text-dim); font-family: var(--font-mono);">' + date + '</span>' +
+                    '</div>' +
+                    '<div class="markdown-body" style="font-size: .85rem; line-height: 1.6; color: var(--text-secondary);">' + contentHtml + '</div>' +
+                    '</div>' +
+                    '</div>';
+            });
+            list.innerHTML = html;
+            initScrollReveal();
+        }
+
+        async function submitMessage() {
+            const nick = $('msgNick').value.trim();
+            const avatar = $('msgAvatar').value.trim();
+            const content = $('msgContent').value.trim();
+            
+            if (!nick) { toast('请输入你的昵称~', 'e'); return; }
+            if (!content) { toast('请写下你的留言正文~', 'e'); return; }
+            
+            const btn = $('msgSubmitBtn');
+            btn.disabled = true;
+            btn.textContent = '提交中...';
+            
+            const t = getGHToken();
+            if (!t) {
+                toast('Token未就绪，无法同步到云端', 'e');
+                btn.disabled = false;
+                btn.textContent = '提交留言';
+                return;
+            }
+            
+            const d = new Date();
+            const dateStr = d.getFullYear() + '-' +
+                String(d.getMonth()+1).padStart(2,'0') + '-' +
+                String(d.getDate()).padStart(2,'0') + ' ' +
+                String(d.getHours()).padStart(2,'0') + ':' +
+                String(d.getMinutes()).padStart(2,'0');
+
+            const newMsg = {
+                nick: nick,
+                avatar: avatar,
+                content: content,
+                date: dateStr
+            };
+            
+            const updatedMessages = [...messages, newMsg];
+            
+            try {
+                const repo = 'eliyfy/yfy_blog';
+                const fileRes = await fetch('https://api.github.com/repos/' + repo + '/contents/guestbook.json', {
+                    headers: { 'Authorization': 'token ' + t }
+                });
+                
+                let sha = null;
+                if (fileRes.status === 200) {
+                    const fileData = await fileRes.json();
+                    sha = fileData.sha;
+                }
+                
+                const putBody = {
+                    message: '留言板：来自 ' + nick + ' 的新留言',
+                    content: btoa(unescape(encodeURIComponent(JSON.stringify(updatedMessages, null, 2)))),
+                    branch: 'main'
+                };
+                if (sha) putBody.sha = sha;
+                
+                const putRes = await fetch('https://api.github.com/repos/' + repo + '/contents/guestbook.json', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'token ' + t,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/vnd.github+json'
+                    },
+                    body: JSON.stringify(putBody)
+                });
+                
+                if (putRes.status === 200 || putRes.status === 201) {
+                    toast('留言成功，已同步云端！');
+                    $('msgContent').value = '';
+                    messages = updatedMessages;
+                    renderMessages();
+                } else {
+                    const errData = await putRes.json();
+                    toast('留言失败: ' + (errData.message || '未知错误'), 'e');
+                }
+            } catch (e) {
+                toast('网络异常: ' + e.message, 'e');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '提交留言';
             }
         }
 
@@ -2080,6 +2397,160 @@
                 zenBtn.textContent = 'Zen ⚡';
                 updateWordCount();
             };
+        }
+
+        // ================================================================
+        //  COMMENTS
+        // ================================================================
+        let comments = [];
+        let currentCommentArticleId = null;
+
+        async function loadComments(articleId) {
+            currentCommentArticleId = articleId;
+            // Sync from cloud first
+            try {
+                const res = await fetch(`https://raw.githubusercontent.com/eliyfy/yfy_blog/main/comments.json?t=${Date.now()}`);
+                if (res.ok) {
+                    const cloud = await res.json();
+                    if (Array.isArray(cloud)) {
+                        // Merge into local DB (only keep new cloud comments)
+                        for (const c of cloud) {
+                            // Only store comments for current article
+                            if (c.articleId === articleId) {
+                                await dbPutComment(c);
+                            }
+                        }
+                    }
+                }
+            } catch(e) {
+                console.log('Comment cloud sync failed:', e.message);
+            }
+            // Load from local DB
+            const all = await dbAllComments();
+            comments = all.filter(c => c.articleId === articleId);
+            renderComments();
+        }
+
+        function renderComments() {
+            const container = $('commentList');
+            if (!container) return;
+            if (!comments.length) {
+                container.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:24px 0;">还没有留言，来说点什么吧 ✍️</div>';
+                return;
+            }
+            let html = '';
+            comments.forEach(c => {
+                const d = new Date(c.ts);
+                const dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+                html += '<div class="comment-item">';
+                html += '<div class="comment-meta">';
+                html += '<span class="comment-avatar">' + escHtml(c.name.charAt(0)) + '</span>';
+                html += '<strong>' + escHtml(c.name) + '</strong>';
+                html += '<span class="comment-date">' + dateStr + '</span>';
+                html += '</div>';
+                html += '<div class="comment-body">' + escHtml(c.text) + '</div>';
+                if (isLoggedIn) {
+                    html += '<div class="comment-actions"><span class="comment-del" onclick="delComment(\\'' + c.id + '\\')">删除</span></div>';
+                }
+                html += '</div>';
+            });
+            container.innerHTML = html;
+        }
+
+        async function submitComment() {
+            const nameInput = $('commentName');
+            const textInput = $('commentText');
+            const name = nameInput.value.trim();
+            const text = textInput.value.trim();
+            if (!name || !text) { toast('请填写昵称和留言内容', 'e'); return; }
+            if (!currentCommentArticleId) return;
+
+            const c = {
+                id: 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+                articleId: currentCommentArticleId,
+                name: name,
+                text: text,
+                ts: Date.now()
+            };
+
+            try {
+                await dbPutComment(c);
+                comments.push(c);
+                renderComments();
+                textInput.value = '';
+                toast('留言已保存');
+
+                // Try to sync to cloud if logged in
+                const token = localStorage.getItem('blog_gh_token') || localStorage.getItem('github_token');
+                if (token) {
+                    syncCommentsToCloud(token);
+                }
+            } catch(e) {
+                toast('留言保存失败', 'e');
+            }
+        }
+
+        async function delComment(id) {
+            if (!confirm('删除此留言？')) return;
+            await dbDelComment(id);
+            comments = comments.filter(c => c.id !== id);
+            renderComments();
+            toast('已删除');
+            const token = localStorage.getItem('blog_gh_token') || localStorage.getItem('github_token');
+            if (token) syncCommentsToCloud(token);
+        }
+
+        async function syncCommentsToCloud(token) {
+            try {
+                // Gather all comments from DB
+                const allComments = await dbAllComments();
+                const apiUrl = 'https://api.github.com/repos/eliyfy/yfy_blog/contents/comments.json';
+                let sha = null;
+                try {
+                    const getRes = await fetch(apiUrl, { headers: { 'Authorization': `token ${token}` } });
+                    if (getRes.ok) {
+                        const getData = await getRes.json();
+                        sha = getData.sha;
+                    }
+                } catch(e) {}
+                const fileContent = btoa(unescape(encodeURIComponent(JSON.stringify(allComments, null, 2))));
+                const body = { message: 'Sync comments [skip ci]', content: fileContent, branch: 'main' };
+                if (sha) body.sha = sha;
+                await fetch(apiUrl, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                console.log('✓ Comments synced to cloud');
+            } catch(e) {
+                console.log('Comment sync failed:', e.message);
+            }
+        }
+
+        // ====== Comment IndexedDB helpers ======
+        function dbAllComments() {
+            return new Promise((ok, fail) => {
+                const tx = db.transaction('comments', 'readonly');
+                const req = tx.objectStore('comments').getAll();
+                req.onsuccess = () => ok(req.result || []);
+                req.onerror = () => fail(req.error);
+            });
+        }
+        function dbPutComment(c) {
+            return new Promise((ok, fail) => {
+                const tx = db.transaction('comments', 'readwrite');
+                const req = tx.objectStore('comments').put(c);
+                req.onsuccess = ok;
+                req.onerror = () => fail(req.error);
+            });
+        }
+        function dbDelComment(id) {
+            return new Promise((ok, fail) => {
+                const tx = db.transaction('comments', 'readwrite');
+                const req = tx.objectStore('comments').delete(id);
+                req.onsuccess = ok;
+                req.onerror = () => fail(req.error);
+            });
         }
 
         console.log('芸芣苡 · 博客 loaded');

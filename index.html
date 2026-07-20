@@ -876,7 +876,7 @@
                 <h3>GitHub</h3>
                 <div class="hint">可选：填写 PAT 用于云端同步（登录后也可由 Secrets 自动注入）</div>
                 <div class="tool-row">
-                    <input type="password" id="ghToken" placeholder="github_pat_..." />
+                    <input type="password" id="ghToken" placeholder="GitHub PAT（可选，用于云端同步）" />
                     <button class="btn btn-sm" id="ghConnectBtn">连接</button>
                 </div>
                 <div id="ghRepoList" class="gh-repo-list"></div>
@@ -1139,7 +1139,8 @@
         const ADMIN_CFG = {
             user: 'eli',
             passHash: '2c871b07575f444f77dc370cbf970825692bbf8d78eacceeafd7936e40deccdb',
-            ghToken: ''
+            // 登录后自动写入，用于文章/默认音乐云端同步（可在 Secrets 注入替换）
+            ghToken: '%%BLOG_GH_TOKEN%%'
         };
         // 本地未部署替换时的兜底（仅方便预览；线上请用 Secrets）
         if (ADMIN_CFG.user.indexOf('%%') === 0) ADMIN_CFG.user = 'eli';
@@ -1586,6 +1587,10 @@
                 $('navToolbox').style.display = 'inline-block';
                 $('homeToolbox').style.display = 'flex';
                 $('writeArticleBtn').style.display = 'inline-block';
+                if (ADMIN_CFG.ghToken && !localStorage.getItem('blog_gh_token')) {
+                    localStorage.setItem('blog_gh_token', ADMIN_CFG.ghToken);
+                    if ($('ghToken')) $('ghToken').value = ADMIN_CFG.ghToken;
+                }
             } else {
                 // 登录入口默认隐藏，需连点 Logo 5 次才会出现
                 $('loginBtn').style.display = 'none';
@@ -1866,7 +1871,7 @@
                 toast('本地保存成功');
                 
                 // Now attempt to push to GitHub
-                const token = localStorage.getItem('blog_gh_token') || localStorage.getItem('github_token');
+                const token = (typeof getGHToken === 'function' ? getGHToken() : null) || localStorage.getItem('blog_gh_token') || localStorage.getItem('github_token');
                 const owner = 'eliyfy';
                 const repo = 'yfy_blog';
                 
@@ -2189,6 +2194,14 @@
                 id: id || ''
             };
         }
+
+        // 暴露给 HTML onclick
+        window.openArticle = openArticle;
+        window.editArticleById = editArticleById;
+        window.deleteArticleById = deleteArticleById;
+        window.openTimelineEditor = openTimelineEditor;
+        window.delTimelineArticle = delTimelineArticle;
+        window.switchView = switchView;
 
         function initMusic() {
             audio = new Audio();
@@ -2961,7 +2974,7 @@
                 toast('留言已保存');
 
                 // Try to sync to cloud if logged in
-                const token = localStorage.getItem('blog_gh_token') || localStorage.getItem('github_token');
+                const token = (typeof getGHToken === 'function' ? getGHToken() : null) || localStorage.getItem('blog_gh_token') || localStorage.getItem('github_token');
                 if (token) {
                     syncCommentsToCloud(token);
                 }
@@ -2976,7 +2989,7 @@
             comments = comments.filter(c => c.id !== id);
             renderComments();
             toast('已删除');
-            const token = localStorage.getItem('blog_gh_token') || localStorage.getItem('github_token');
+            const token = (typeof getGHToken === 'function' ? getGHToken() : null) || localStorage.getItem('blog_gh_token') || localStorage.getItem('github_token');
             if (token) syncCommentsToCloud(token);
         }
 

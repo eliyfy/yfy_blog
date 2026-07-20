@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>芸芣苡</title>
+    <meta name="description" content="芸芣苡 · 纸笺文人风个人博客。写一点技术、生活与随笔。" />
+    <meta name="theme-color" content="#f6f2ec" />
+    <meta property="og:title" content="芸芣苡" />
+    <meta property="og:description" content="纸笺文人风个人博客。写一点技术、生活与随笔。" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://eliyfy.github.io/yfy_blog/" />
+    <meta property="og:image" content="https://eliyfy.github.io/yfy_blog/og-cover.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="favicon.svg" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -18,10 +28,18 @@
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background: var(--bg);
             color: var(--text);
-            line-height: 1.7;
+            line-height: 1.75;
             transition: background .35s, color .35s;
             -webkit-font-smoothing: antialiased;
         }
+        body::before {
+            content: '';
+            position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            opacity: .035;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+        .page, .player-wrap, .modal-overlay, #readingProgress, #toTop, .toast-wrap { position: relative; z-index: 1; }
+        .page { z-index: 1; }
         a { color:inherit; text-decoration:none; }
         button { font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; font-size:inherit; }
         input, textarea { font-family:inherit; font-size:inherit; }
@@ -29,30 +47,37 @@
 
         /* ===== Theme ===== */
         :root {
-            --bg: #f6f2ec;
-            --bg-card: #fefcf8;
-            --bg-soft: #ede8e1;
-            --text: #2c2416;
-            --text-secondary: #8c7a6b;
-            --text-dim: #b5a698;
-            --border: #dcd3c9;
-            --accent: #4a3728;
-            --accent-hover: #2c2416;
-            --shadow: 0 1px 4px rgba(0,0,0,.04);
-            --font-serif: 'Noto Serif SC', 'Georgia', serif;
-            --font-mono: 'JetBrains Mono', monospace;
+            --bg: #f5f0e8;
+            --bg-card: #fdfaf4;
+            --bg-soft: #ebe4d8;
+            --text: #2a2218;
+            --text-secondary: #7d6b5a;
+            --text-dim: #a89888;
+            --border: #d6cbbd;
+            --accent: #5a3f2c;
+            --accent-hover: #2a2218;
+            --link: #6b4f3a;
+            --shadow: 0 2px 10px rgba(74,55,40,.06);
+            --shadow-soft: 0 1px 3px rgba(74,55,40,.04);
+            --radius: 10px;
+            --font-serif: 'Noto Serif SC', 'Songti SC', 'SimSun', Georgia, serif;
+            --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+            --read-size: 1.05rem;
+            --ease: .18s ease;
         }
         [data-theme="dark"] {
-            --bg: #181510;
-            --bg-card: #221e18;
-            --bg-soft: #2a251e;
-            --text: #d9d0c4;
-            --text-secondary: #8c7a6b;
-            --text-dim: #5a4e42;
-            --border: #332c24;
-            --accent: #d9d0c4;
-            --accent-hover: #f0e6d8;
-            --shadow: 0 1px 6px rgba(0,0,0,.3);
+            --bg: #14110e;
+            --bg-card: #1c1915;
+            --bg-soft: #26211b;
+            --text: #e4d9ca;
+            --text-secondary: #9a8774;
+            --text-dim: #6a5c4e;
+            --border: #3a3229;
+            --accent: #e4d9ca;
+            --accent-hover: #f4ebe0;
+            --link: #cbb8a0;
+            --shadow: 0 2px 14px rgba(0,0,0,.35);
+            --shadow-soft: 0 1px 4px rgba(0,0,0,.25);
         }
 
         /* ===== Layout ===== */
@@ -87,7 +112,8 @@
         /* ===== Views ===== */
         .view { display:none; padding:48px 0 60px; flex:1; }
         .view.active { display:block; animation:fadeIn .3s ease; }
-        @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes riseIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
 
         /* ===== Home ===== */
         .home-hero { padding:60px 0 48px; text-align:center; }
@@ -813,15 +839,298 @@
         .art-admin-actions span.danger { color:#b91c1c; }
         #detailAdminActions { display:none; }
         #detailAdminActions.show { display:inline-flex !important; }
+
+        /* ===== Paper scholar UX polish ===== */
+        .art-entry {
+            padding: 18px 16px !important;
+            border: 1px solid var(--border) !important;
+            border-bottom: 1px solid var(--border) !important;
+            border-radius: var(--radius) !important;
+            background: var(--bg-card);
+            box-shadow: var(--shadow-soft);
+            transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+        }
+        .art-entry:hover {
+            border-color: var(--accent) !important;
+            box-shadow: var(--shadow);
+            transform: translateY(-1px);
+        }
+        .standalone-art-list { gap: 12px !important; }
+
+        .header { padding: 22px 0 16px; }
+        .blog-title {
+            display: inline-flex; align-items: center; gap: 8px;
+            transition: opacity var(--ease);
+        }
+        .blog-title .logo-mark {
+            width: 28px; height: 28px; border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            display: inline-flex; align-items: center; justify-content: center;
+            font-family: var(--font-serif); font-size: .85rem; font-weight: 700;
+            color: var(--accent); letter-spacing: 0;
+            box-shadow: var(--shadow-soft);
+        }
+        .blog-title img.logo-img {
+            width: 28px; height: 28px; border-radius: 50%;
+            object-fit: cover; border: 1px solid var(--border);
+            display: none;
+        }
+        .blog-title.has-logo img.logo-img { display: inline-block; }
+        .blog-title.has-logo .logo-mark { display: none; }
+        .nav a, .nav button { transition: background var(--ease), color var(--ease), transform var(--ease); }
+        .nav a:active, .nav button:active { transform: scale(.97); }
+
+        .home-hero { padding: 36px 0 20px; text-align: center; }
+        .home-name {
+            font-family: var(--font-serif);
+            font-size: clamp(2rem, 5.5vw, 2.8rem);
+            font-weight: 700; letter-spacing: 10px;
+            color: var(--text); line-height: 1.25;
+        }
+        .home-quote {
+            margin-top: 14px;
+            font-family: var(--font-serif);
+            font-size: .98rem;
+            color: var(--text-secondary);
+            min-height: 1.5em;
+            letter-spacing: .08em;
+        }
+        .home-divider {
+            width: 28px; height: 1px; background: var(--border);
+            margin: 22px auto 18px;
+        }
+        .home-mood {
+            font-size: .82rem; color: var(--text-dim);
+            font-family: var(--font-serif); letter-spacing: .12em;
+            margin-bottom: 8px;
+        }
+        .home-sections { display: none !important; } /* 弱化三大入口，内容直出 */
+
+        .home-recent { margin-top: 8px; padding-bottom: 12px; }
+        .home-recent-label {
+            font-size: .75rem; letter-spacing: .2em;
+            color: var(--text-dim); margin-bottom: 14px;
+            font-family: var(--font-serif);
+        }
+        .home-recent-item {
+            display: block !important;
+            padding: 16px 16px 14px !important;
+            margin-bottom: 10px;
+            border: 1px solid var(--border) !important;
+            border-radius: var(--radius);
+            background: var(--bg-card);
+            box-shadow: var(--shadow-soft);
+            cursor: pointer;
+            transition: border-color var(--ease), box-shadow var(--ease), transform var(--ease);
+            animation: riseIn .35s ease both;
+        }
+        .home-recent-item:nth-child(2) { animation-delay: .05s; }
+        .home-recent-item:nth-child(3) { animation-delay: .1s; }
+        .home-recent-item:hover {
+            border-color: var(--accent) !important;
+            box-shadow: var(--shadow);
+            transform: translateY(-1px);
+        }
+        .home-recent-item .row {
+            display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+        }
+        .home-recent-item .title {
+            font-family: var(--font-serif);
+            font-size: 1.05rem; font-weight: 600; color: var(--text);
+            line-height: 1.4;
+        }
+        .home-recent-item .date {
+            font-size: .75rem; color: var(--text-dim); white-space: nowrap;
+        }
+        .home-recent-item .meta {
+            margin-top: 6px; display: flex; gap: 8px; align-items: center;
+            font-size: .75rem; color: var(--text-secondary);
+        }
+        .home-recent-item .tag-pill {
+            display: inline-block; padding: 1px 8px;
+            border: 1px solid var(--border); border-radius: 999px;
+            font-size: .72rem; color: var(--text-secondary);
+            background: var(--bg-soft);
+        }
+        .home-recent-item .excerpt {
+            margin-top: 8px; font-size: .88rem; line-height: 1.65;
+            color: var(--text-secondary);
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .home-recent-empty, .empty-state {
+            text-align: center; padding: 40px 16px;
+            color: var(--text-secondary); font-family: var(--font-serif);
+            border: 1px dashed var(--border); border-radius: var(--radius);
+            background: var(--bg-card);
+        }
+        .empty-state .empty-icon { font-size: 1.4rem; margin-bottom: 8px; opacity: .7; }
+        .empty-state .empty-sub { font-size: .8rem; color: var(--text-dim); margin-top: 6px; font-family: Inter, sans-serif; }
+
+        .article-item {
+            padding: 18px 16px !important;
+            margin-bottom: 10px;
+            border: 1px solid var(--border) !important;
+            border-radius: var(--radius);
+            background: var(--bg-card);
+            box-shadow: var(--shadow-soft);
+            transition: border-color var(--ease), box-shadow var(--ease), transform var(--ease);
+        }
+        .article-item:hover {
+            border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+            box-shadow: var(--shadow);
+            transform: translateY(-1px);
+        }
+        .article-item .art-title {
+            font-family: var(--font-serif) !important;
+            font-size: 1.12rem !important; font-weight: 600 !important;
+        }
+        .article-item .art-excerpt {
+            margin-top: 8px; font-size: .88rem; line-height: 1.65;
+            color: var(--text-secondary);
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+
+        /* Reading */
+        #readingProgress {
+            position: fixed; top: 0; left: 0; height: 2px; width: 0;
+            background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 40%, var(--bg)));
+            z-index: 1000; transition: width .08s linear;
+            box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 30%, transparent);
+        }
+        .art-content, .gh-editor-preview, #detailContent {
+            font-size: var(--read-size);
+            line-height: 1.85;
+            letter-spacing: .01em;
+        }
+        .art-content h1, .art-content h2, .art-content h3,
+        #detailContent h1, #detailContent h2, #detailContent h3 {
+            font-family: var(--font-serif);
+            font-weight: 700;
+            line-height: 1.35;
+            margin: 1.6em 0 .7em;
+            color: var(--text);
+        }
+        .art-content h2, #detailContent h2 {
+            padding-bottom: .35em;
+            border-bottom: 1px solid var(--border);
+        }
+        .art-content h3, #detailContent h3 {
+            border-left: 3px solid var(--accent);
+            padding-left: .6em;
+        }
+        .art-content p, #detailContent p { margin: .9em 0; }
+        .art-content a, #detailContent a { color: var(--link); text-decoration: underline; text-underline-offset: 3px; }
+        .art-content code, #detailContent code {
+            font-family: var(--font-mono);
+            font-size: .88em;
+            background: var(--bg-soft);
+            padding: .12em .4em; border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+        .art-content pre, #detailContent pre {
+            background: var(--bg-soft) !important;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 16px !important;
+            overflow: auto;
+            box-shadow: var(--shadow-soft);
+        }
+        .art-content pre code, #detailContent pre code {
+            border: none; background: transparent; padding: 0;
+        }
+        .art-content blockquote, #detailContent blockquote {
+            margin: 1.1em 0;
+            padding: .6em 1em;
+            border-left: 3px solid var(--accent);
+            background: var(--bg-soft);
+            color: var(--text-secondary);
+            border-radius: 0 8px 8px 0;
+            font-family: var(--font-serif);
+        }
+        .detail-toolbar {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            margin: 8px 0 18px;
+        }
+        .font-size-ctrl {
+            display: inline-flex; align-items: center; gap: 4px;
+            border: 1px solid var(--border); border-radius: 999px;
+            padding: 2px; background: var(--bg-card);
+        }
+        .font-size-ctrl button {
+            width: 30px; height: 28px; border-radius: 999px;
+            font-size: .78rem; color: var(--text-secondary);
+        }
+        .font-size-ctrl button:hover { background: var(--bg-soft); color: var(--text); }
+        .font-size-ctrl .fs-label { font-size: .72rem; color: var(--text-dim); padding: 0 4px; min-width: 28px; text-align: center; }
+
+        /* Player polish */
+        .player-wrap {
+            bottom: 20px; right: 18px;
+            border-radius: 14px !important;
+            box-shadow: var(--shadow) !important;
+            border: 1px solid var(--border) !important;
+            backdrop-filter: blur(8px);
+            max-width: min(320px, calc(100vw - 28px));
+        }
+        .player-wrap.collapsed {
+            width: auto !important;
+            min-width: 0;
+        }
+        .player-wrap.collapsed .player-body { display: none !important; }
+        .player-cover {
+            width: 36px; height: 36px; border-radius: 8px;
+            background: var(--bg-soft); border: 1px solid var(--border);
+            object-fit: cover; flex-shrink: 0;
+            display: none;
+        }
+        .player-cover.show { display: block; }
+        .player-body { gap: 10px !important; }
+        .player-info .song { font-family: var(--font-serif); font-weight: 600; }
+        .player-fail {
+            font-size: .72rem; color: #b91c1c; margin-top: 2px; display: none;
+        }
+        .player-fail.show { display: block; }
+
+        #toTop {
+            position: fixed; right: 18px; bottom: 86px; z-index: 40;
+            width: 36px; height: 36px; border-radius: 50%;
+            border: 1px solid var(--border); background: var(--bg-card);
+            color: var(--text-secondary); box-shadow: var(--shadow-soft);
+            opacity: 0; pointer-events: none; transition: opacity var(--ease), transform var(--ease);
+            font-size: .85rem;
+        }
+        #toTop.show { opacity: 1; pointer-events: auto; }
+        #toTop:hover { color: var(--text); transform: translateY(-2px); }
+
+        .skeleton {
+            background: linear-gradient(90deg, var(--bg-soft) 25%, var(--bg-card) 50%, var(--bg-soft) 75%);
+            background-size: 200% 100%;
+            animation: sk 1.2s ease infinite;
+            border-radius: 8px; height: 14px; margin: 10px 0;
+        }
+        @keyframes sk { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+        @media (max-width: 600px) {
+            .home-hero { padding: 24px 0 12px; }
+            .home-name { letter-spacing: 6px; }
+            .view { padding: 28px 0 48px; }
+            .page { padding: 0 16px; }
+            .player-wrap { bottom: 14px; right: 12px; }
+            #toTop { right: 12px; bottom: 72px; }
+        }
+
         .blog-title { user-select:none; }
         </style>
 </head>
 <body>
     <div id="readingProgress"></div>
+    <button type="button" id="toTop" title="回到顶部">↑</button>
     <div class="page">
         <!-- ========== HEADER ========== -->
         <header class="header">
-            <a href="#" class="blog-title" id="siteLogo" data-view="home">芸芣苡</a>
+            <a href="#" class="blog-title" id="siteLogo" data-view="home"><span class="logo-mark" aria-hidden="true">芸</span><img class="logo-img" id="siteLogoImg" alt="logo" src="logo.png" onerror="this.style.display='none'" /><span class="logo-text">芸芣苡</span></a>
             <nav class="nav">
                 <a href="#" data-view="home" class="active">首页</a>
                 <a href="#" data-view="articles">文章</a>
@@ -844,24 +1153,21 @@
                 <div class="home-name">芸芣苡</div>
                 <div class="home-quote loading" id="dailyQuote">载其见兮</div>
                 <div class="home-divider"></div>
-                <div class="home-sections">
-                    <a href="#" data-view="articles">
-                        文章 <span class="arrow">&nbsp;→</span>
-                    </a>
-                    <a href="#" data-view="timeline">
-                        时间线 <span class="arrow">&nbsp;→</span>
-                    </a>
-                    <a href="#" data-view="toolbox" id="homeToolbox" style="display:none">
-                        工具箱 <span class="arrow">&nbsp;→</span>
-                    </a>
-                    <a href="#" data-view="about">
-                        关于 <span class="arrow">&nbsp;→</span>
-                    </a>
+                <div class="home-mood" id="homeMood">纸短情长 · 载其见兮</div>
+                <div class="home-sections" style="display:none">
+                    <a href="#" data-view="articles">文章 <span class="arrow">&nbsp;→</span></a>
+                    <a href="#" data-view="timeline">时间线 <span class="arrow">&nbsp;→</span></a>
+                    <a href="#" data-view="toolbox" id="homeToolbox" style="display:none">工具箱 <span class="arrow">&nbsp;→</span></a>
+                    <a href="#" data-view="about">关于 <span class="arrow">&nbsp;→</span></a>
                 </div>
             </div>
             <div class="home-recent">
                 <div class="home-recent-label">最近更新</div>
-                <div id="homeRecentList"></div>
+                <div id="homeRecentList">
+                    <div class="skeleton"></div>
+                    <div class="skeleton" style="width:80%"></div>
+                    <div class="skeleton" style="width:60%"></div>
+                </div>
             </div>
         </section>
 
@@ -927,6 +1233,11 @@
         <section class="view" id="view-article-detail">
             <div style="margin-bottom: 24px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
                 <button class="btn btn-sm btn-outline" onclick="switchView('articles')" style="cursor:pointer;">← 返回文章列表</button>
+                <span class="font-size-ctrl" title="正文字号">
+                    <button type="button" id="fontSizeDown" aria-label="减小字号">A−</button>
+                    <span class="fs-label" id="fontSizeLabel">中</span>
+                    <button type="button" id="fontSizeUp" aria-label="增大字号">A+</button>
+                </span>
                 <span id="detailAdminActions" style="display:none; margin-left:auto; gap:8px;">
                     <button class="btn btn-sm" id="detailEditBtn" type="button">编辑</button>
                     <button class="btn btn-sm btn-outline" id="detailDeleteBtn" type="button">删除</button>
@@ -1110,7 +1421,9 @@
     <!-- ========== MUSIC PLAYER ========== -->
     <div class="player-wrap" id="playerWrap">
         <div class="player-body">
+            <img class="player-cover" id="playerCover" alt="" />
             <div class="player-info">
+                <div class="player-fail" id="playerFail">播放失败，正在尝试下一首…</div>
                 <span class="song" id="songName">未播放</span>
                 <span class="artist" id="artistName">-</span>
             </div>
@@ -1750,7 +2063,7 @@
             const container = $('articleList');
             if (!container) return;
             if (!articles.length) {
-                container.innerHTML = '<div class="empty-state">还没有文章</div>';
+                container.innerHTML = '<div class="empty-state"><div class="empty-icon">✎</div>还没有文章<div class="empty-sub">静待第一篇落笔</div></div>';
                 return;
             }
 
@@ -1779,7 +2092,7 @@
                 const realIdx = articles.indexOf(a);
                 const wordCount = (a.content || '').replace(/<[^>]*>/g,'').length;
                 const readMin = Math.max(1, Math.round(wordCount / 400));
-                const excerptText = escHtml((a.content || '').replace(/#|\*|`|>|\[|\]/g, '').slice(0, 140)) + '...';
+                const excerptText = escHtml(extractExcerpt(a.content, 120));
 
                 let adminHtml = '';
                 if (isLoggedIn) {
@@ -1816,19 +2129,81 @@
             }
         }
 
+        
+        function stripMd(md) {
+            return String(md || '')
+                .replace(/```[\s\S]*?```/g, ' ')
+                .replace(/`[^`]*`/g, ' ')
+                .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+                .replace(/\[[^\]]*\]\([^)]*\)/g, ' ')
+                .replace(/[#>*_~\-]+/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+        function extractExcerpt(md, n) {
+            const t = stripMd(md);
+            if (!t) return '暂无摘要';
+            return t.length > (n || 72) ? t.slice(0, n || 72) + '…' : t;
+        }
+        function readingMinutes(md) {
+            const t = stripMd(md);
+            const mins = Math.max(1, Math.ceil((t.length || 0) / 400));
+            return mins + ' min';
+        }
+        function applyReadFontSize(delta) {
+            const cur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--read-size')) || 1.05;
+            let next = Math.min(1.35, Math.max(0.9, cur + (delta || 0)));
+            document.documentElement.style.setProperty('--read-size', next + 'rem');
+            localStorage.setItem('blog_read_size', String(next));
+            const label = $('fontSizeLabel');
+            if (label) label.textContent = next < 1 ? '小' : (next > 1.15 ? '大' : '中');
+        }
+        function initReadFontSize() {
+            const saved = parseFloat(localStorage.getItem('blog_read_size') || '');
+            if (saved) document.documentElement.style.setProperty('--read-size', saved + 'rem');
+            const up = $('fontSizeUp'), down = $('fontSizeDown');
+            if (up) up.onclick = () => applyReadFontSize(0.08);
+            if (down) down.onclick = () => applyReadFontSize(-0.08);
+            applyReadFontSize(0);
+        }
+        function initToTop() {
+            const btn = $('toTop');
+            if (!btn) return;
+            const onScroll = () => {
+                if (window.scrollY > 280) btn.classList.add('show');
+                else btn.classList.remove('show');
+            };
+            window.addEventListener('scroll', onScroll, { passive: true });
+            btn.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+            onScroll();
+        }
+        function tryLoadSiteLogo() {
+            const a = $('siteLogo');
+            const img = $('siteLogoImg');
+            if (!a || !img) return;
+            img.onload = () => a.classList.add('has-logo');
+            // if logo.png exists it will show; otherwise onerror hides
+            img.src = 'logo.png?t=' + Date.now();
+        }
+
+
         function renderHomeRecent() {
             const list = $('homeRecentList');
+            if (!list) return;
             if (!articles.length) {
-                list.innerHTML = '<div class="home-recent-empty">还没有文章</div>';
+                list.innerHTML = '<div class="home-recent-empty"><div class="empty-icon">✎</div>还没有文章<div class="empty-sub">登录后可在「文章」页写下第一篇</div></div>';
                 return;
             }
-            const recent = articles.slice(-3).reverse();
+            const recent = articles.slice().sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0, 5);
             let html = '';
-            recent.forEach(a => {
-                const realIdx = articles.indexOf(a);
-                html += '<div class="home-recent-item clickable" onclick="openArticle(' + realIdx + ')">' +
-                    '<span class="title">' + escHtml(a.title) + '</span>' +
-                    '<span class="date">' + a.date + '</span>' +
+            recent.forEach((a, i) => {
+                const id = a.id || '';
+                const tag = a.tag ? '<span class="tag-pill">' + escHtml(a.tag) + '</span>' : '';
+                const mins = readingMinutes(a.content);
+                html += '<div class="home-recent-item clickable" onclick="openArticle(\'' + id + '\')">' +
+                    '<div class="row"><span class="title">' + escHtml(a.title) + '</span><span class="date">' + escHtml(a.date || '') + '</span></div>' +
+                    '<div class="meta">' + tag + '<span>' + mins + ' read</span></div>' +
+                    '<div class="excerpt">' + escHtml(extractExcerpt(a.content, 90)) + '</div>' +
                     '</div>';
             });
             list.innerHTML = html;
@@ -2288,7 +2663,8 @@
 
         function initMusic() {
             audio = new Audio();
-            audio.volume = 0.6;
+            const _vol = parseFloat(localStorage.getItem('blog_music_vol') || '0.6');
+            audio.volume = isNaN(_vol) ? 0.6 : Math.min(1, Math.max(0, _vol));
             audio.preload = 'metadata';
             audio.crossOrigin = 'anonymous';
 
@@ -2543,9 +2919,16 @@
             if (idx < 0) idx = musicPlaylist.length - 1;
             if (idx >= musicPlaylist.length) idx = 0;
             musicIndex = idx;
+            try { localStorage.setItem('blog_music_idx', String(idx)); } catch(e) {}
             const song = musicPlaylist[idx];
             $('songName').textContent = song.name;
             $('artistName').textContent = song.artist;
+            const failEl = $('playerFail'); if (failEl) failEl.classList.remove('show');
+            const cover = $('playerCover');
+            if (cover) {
+                if (song.pic || song.cover) { cover.src = song.pic || song.cover; cover.classList.add('show'); }
+                else { cover.removeAttribute('src'); cover.classList.remove('show'); }
+            }
             $('progressBar').style.width = '0%';
 
             try {

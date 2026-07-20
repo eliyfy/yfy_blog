@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f5f0e8"/>
+      <stop offset="100%" stop-color="#ebe4d8"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#g)"/>
+  <rect x="48" y="48" width="1104" height="534" fill="none" stroke="#5a3f2c" stroke-opacity=".18" stroke-width="2"/>
+  <text x="600" y="300" text-anchor="middle" font-family="Georgia, 'Noto Serif SC', serif" font-size="96" font-weight="700" fill="#2a2218" letter-spacing="18">芸芣苡</text>
+  <text x="600" y="380" text-anchor="middle" font-family="Georgia, serif" font-size="28" fill="#7d6b5a" letter-spacing="8">纸笺文人 · 载其见兮</text>
+</svg>

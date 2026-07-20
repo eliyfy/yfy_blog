@@ -1280,20 +1280,21 @@
             }
 
             let arr = await dbAll();
-            // Migrating old localStorage data
+            // 仅在本地为空时迁移旧 localStorage，避免把已删除文章重新写回
             const old = localStorage.getItem('blog_articles');
-            if (old) {
+            if (old && (!arr || !arr.length)) {
                 try {
                     const oldArr = JSON.parse(old);
                     for (const a of oldArr) {
                         if (!a.id) a.id = 'a_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
                         await dbPut(a);
                     }
-                    localStorage.removeItem('blog_articles');
                     arr = await dbAll();
                 } catch(e) {}
             }
-            articles = arr.sort((a,b) => a.ts - b.ts);
+            // 旧缓存一律清理，防止复活
+            try { localStorage.removeItem('blog_articles'); } catch(e) {}
+            articles = (arr || []).sort((a,b) => a.ts - b.ts);
         }
 
         // ====== 时间线视图 ======

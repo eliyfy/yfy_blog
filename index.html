@@ -746,6 +746,19 @@
 
             </section>
 
+        
+        <!-- ========== VIEW: ARTICLE DETAIL (INDEPENDENT PAGE) ========== -->
+        <section class="view" id="view-article-detail">
+            <div style="margin-bottom: 24px;">
+                <button class="btn btn-sm btn-outline" onclick="switchView('articles')" style="cursor:pointer;">← 返回文章列表</button>
+            </div>
+            <article class="standalone-article">
+                <h1 id="detailTitle" style="font-family:var(--font-serif); font-size: 2rem; font-weight:700; margin-bottom: 12px; color:var(--text); line-height: 1.3;"></h1>
+                <div class="art-meta" id="detailMeta" style="font-size: .85rem; color: var(--text-dim); margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid var(--border);"></div>
+                <div class="art-content" id="detailContent" style="font-size: 1.02rem; line-height: 1.95; color: var(--text);"></div>
+            </article>
+        </section>
+
         <!-- ========== VIEW: ABOUT ========== -->
         <section class="view" id="view-about">
             <div class="page-header">
@@ -938,7 +951,17 @@
             renderHomeRecent();
             renderArticleList();
             renderTimelineList();
+            handleRouteHash();
+            window.addEventListener('hashchange', handleRouteHash);
         });
+
+        function handleRouteHash() {
+            const hash = window.location.hash.replace(/^#/, '');
+            if (hash.startsWith('article/')) {
+                const artId = hash.replace('article/', '');
+                openArticle(artId);
+            }
+        }
 
         // ====== IndexedDB 存储 ======
         let db;
@@ -1035,8 +1058,7 @@
             if (!list) return;
             const tl = $('timelineView');
             if (!tl) return;
-            tl.classList.toggle('hidden', !isLoggedIn);
-            if (!isLoggedIn) return;
+            // Everyone can view timeline
 
             if (!articles.length) {
                 list.innerHTML = '<div class="tl-empty">时间线为空，写点东西吧</div>';
@@ -1302,63 +1324,64 @@
             });
         }
 
-        function renderArticleList() {
-            const list = $('articleList');
+                function renderArticleList(filterText) {
+            const container = $('articleList');
+            if (!container) return;
             if (!articles.length) {
-                list.innerHTML = '<div class="empty-state">还没有文章</div>';
+                container.innerHTML = '<div class="empty-state">还没有文章</div>';
                 return;
             }
-            let html = '';
-            articles.slice().reverse().forEach((a, idx) => {
-                const realIdx = articles.length - 1 - idx;
-                const excerpt = a.content.length > 80 ? a.content.slice(0,80) + '…' : a.content;
-                html += '<div class="article-item">' +
-                    '<div class="art-title clickable" data-idx="' + realIdx + '">' + escHtml(a.title) + '</div>' +
-                    '<div class="art-meta">' +
-                    (a.tag ? '<span class="tag">' + escHtml(a.tag) + '</span>' : '') +
-                    '<span>' + a.date + '</span>' +
-                    '<span>' + Math.max(1, Math.ceil(a.content.length / 400)) + ' min read</span>' +
-                    '</div>';
-                if (isLoggedIn) {
-                    html += '<div class="art-actions">' +
-                        '<button class="edit-btn" data-idx="' + realIdx + '">编辑</button>' +
-                        '<button class="del-btn" data-idx="' + realIdx + '">删除</button>' +
-                        '</div>';
-                }
-                html += '</div>';
-            });
-            list.innerHTML = html;
 
-            // Click title to read
-            list.querySelectorAll('.art-title.clickable').forEach(el => {
-                el.addEventListener('click', () => {
-                    const idx = parseInt(el.dataset.idx);
-                    openArticle(idx);
-                });
-            });
+            let filtered = articles.slice().reverse();
+            if (filterText && filterText.trim()) {
+                const q = filterText.trim().toLowerCase();
+                filtered = filtered.filter(a =>
+                    (a.title || '').toLowerCase().includes(q) ||
+                    (a.tag || '').toLowerCase().includes(q) ||
+                    (a.content || '').toLowerCase().includes(q)
+                );
+            }
 
-            // Edit/Delete
-            if (isLoggedIn) {
-                list.querySelectorAll('.edit-btn').forEach(el => {
-                    el.addEventListener('click', e => {
-                        e.stopPropagation();
-                        const idx = parseInt(el.dataset.idx);
-                        openEditor(idx);
-                    });
-                });
-                list.querySelectorAll('.del-btn').forEach(el => {
-                    el.addEventListener('click', e => {
-                        e.stopPropagation();
-                        const idx = parseInt(el.dataset.idx);
-                        if (confirm('确定删除「' + articles[idx].title + '」？')) {
-                            articles.splice(idx, 1);
-                            saveState();
-                            renderArticleList();
-            renderTimelineList();
-                            renderHomeRecent();
-                            toast('已删除');
-                        }
-                    });
+            let searchHtml = '<div class="search-bar">' +
+                '<input type="text" id="articleSearchInput" placeholder="⌕ 搜索文章标题、内容或标签..." value="' + escHtml(filterText || '') + '" />' +
+                '</div>';
+
+            if (!filtered.length) {
+                container.innerHTML = searchHtml + '<div class="no-results">没有找到匹配的文章</div>';
+                bindSearchInput();
+                return;
+            }
+
+            let listHtml = '<div class="standalone-art-list" style="display:flex; flex-direction:column; gap:20px; margin-top:20px;">';
+            filtered.forEach((a) => {
+                const realIdx = articles.indexOf(a);
+                const wordCount = (a.content || '').replace(/<[^>]*>/g,'').length;
+                const readMin = Math.max(1, Math.round(wordCount / 400));
+                const excerptText = escHtml((a.content || '').replace(/#|\*|`|>|\[|\]/g, '').slice(0, 140)) + '...';
+
+                listHtml += '<article class="art-entry" style="padding-bottom:20px; border-bottom:1px solid var(--border); transition:all .2s;">' +
+                    '<div style="font-size:.78rem; color:var(--text-dim); font-family:var(--font-mono); margin-bottom:6px;">' + (a.date || '') + (a.tag ? ' · ' + escHtml(a.tag) : '') + ' · ' + readMin + ' min read</div>' +
+                    '<h2 style="font-size:1.25rem; font-weight:600; color:var(--text); margin-bottom:8px; cursor:pointer;" onclick="openArticle(' + realIdx + ')">' + escHtml(a.title) + '</h2>' +
+                    '<div style="font-size:.9rem; color:var(--text-secondary); line-height:1.6; margin-bottom:12px; cursor:pointer;" onclick="openArticle(' + realIdx + ')">' + excerptText + '</div>' +
+                    '<div><a href="javascript:void(0)" onclick="openArticle(' + realIdx + ')" style="font-size:.85rem; color:var(--accent); text-decoration:none; font-weight:500;">阅读全文 →</a></div>' +
+                    '</article>';
+            });
+            listHtml += '</div>';
+
+            container.innerHTML = searchHtml + listHtml;
+            bindSearchInput();
+        }
+
+        function bindSearchInput() {
+            const input = $('articleSearchInput');
+            if (input) {
+                input.addEventListener('input', () => {
+                    renderArticleList(input.value);
+                    const newInp = $('articleSearchInput');
+                    if (newInp) {
+                        newInp.focus();
+                        newInp.setSelectionRange(newInp.value.length, newInp.value.length);
+                    }
                 });
             }
         }
@@ -1381,64 +1404,65 @@
             list.innerHTML = html;
         }
 
-        function openArticle(idx) {
-            const a = articles[idx];
-            if (!a) return;
-            $('modalTitle').textContent = a.title;
-            
-            const wordCount = a.content.replace(/<[^>]*>/g, '').length;
-            const readMin = Math.max(1, Math.ceil(wordCount / 400));
-            $('modalMeta').textContent = (a.tag ? a.tag + ' · ' : '') + a.date + ' · ' + readMin + ' min read';
-            
-            // Render with marked.js GFM
-            let renderedHtml = '';
-            if (typeof marked !== 'undefined') {
-                renderedHtml = marked.parse(a.content);
+                function openArticle(idxOrId) {
+            let a = null;
+            if (typeof idxOrId === 'number') {
+                a = articles[idxOrId];
             } else {
-                renderedHtml = escHtml(a.content).replace(/\n/g, '<br/>');
+                a = articles.find(item => item.id === idxOrId) || articles[idxOrId];
             }
-            
-            // Extract TOC from rendered H1, H2, H3
+            if (!a) return;
+
+            $('detailTitle').textContent = a.title;
+            const wordCount = (a.content || '').replace(/<[^>]*>/g, '').length;
+            const readMin = Math.max(1, Math.ceil(wordCount / 400));
+            $('detailMeta').textContent = (a.tag ? a.tag + ' · ' : '') + (a.date || '') + ' · ' + readMin + ' min read';
+
+            let rawHtml = '';
+            if (typeof marked !== 'undefined') {
+                rawHtml = marked.parse(a.content || '');
+            } else {
+                rawHtml = escHtml(a.content || '').replace(/\n/g, '<br/>');
+            }
+
             const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = renderedHtml;
+            tempDiv.innerHTML = rawHtml;
             const headers = tempDiv.querySelectorAll('h1, h2, h3');
             let tocHtml = '';
-            
-            if (headers.length >= 2) {
+            if (headers.length > 0) {
                 tocHtml = '<div class="toc-wrap"><div class="toc-title">📑 目录</div>';
                 headers.forEach((h, hIdx) => {
                     const id = 'toc-anchor-' + hIdx;
                     h.setAttribute('id', id);
-                    const levelClass = h.tagName === 'H3' ? 'toc-h3' : 'toc-h2';
-                    tocHtml += '<a href="#" class="' + levelClass + '" data-toc="' + id + '">' + escHtml(h.textContent) + '</a>';
+                    const levelClass = h.tagName === 'H3' ? 'toc-h3' : '';
+                    tocHtml += '<a href="#' + id + '" class="' + levelClass + '" data-toc="' + id + '">' + escHtml(h.textContent) + '</a>';
                 });
                 tocHtml += '</div>';
             }
-            
-            $('modalContent').innerHTML = tocHtml + tempDiv.innerHTML;
-            
-            // Code block highlighting
+
+            $('detailContent').innerHTML = tocHtml + tempDiv.innerHTML;
+
             if (typeof hljs !== 'undefined') {
-                $('modalContent').querySelectorAll('pre code').forEach((block) => {
+                $('detailContent').querySelectorAll('pre code').forEach(block => {
                     hljs.highlightElement(block);
                 });
             }
-            
-            // Bind TOC scroll
-            $('modalContent').querySelectorAll('.toc-wrap a').forEach(link => {
+
+            // Bind TOC scroll jump
+            $('detailContent').querySelectorAll('.toc-wrap a[data-toc]').forEach(link => {
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
                     const targetId = link.getAttribute('data-toc');
-                    const targetEl = $('modalContent').querySelector('#' + targetId);
+                    const targetEl = document.getElementById(targetId);
                     if (targetEl) {
-                        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        targetEl.scrollIntoView({ behavior: 'smooth' });
                     }
                 });
             });
-            
-            $('articleModal').classList.add('open');
-            initReadingProgress();
-            if (typeof initLightbox === 'function') initLightbox();
+
+            // Switch to standalone article detail view
+            switchView('article-detail');
+            window.location.hash = 'article/' + (a.id || idxOrId);
         }
 
         function openEditor(idx) {

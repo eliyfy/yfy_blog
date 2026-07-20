@@ -785,14 +785,24 @@
         .music-result-empty { text-align:center; color:var(--text-secondary); padding:24px 8px; font-size:.85rem; }
         .login-form .field small { display:block; margin-top:6px; color:var(--text-secondary); font-size:.72rem; line-height:1.4; }
 
-    </style>
+    
+        .art-admin-actions { display:flex; gap:10px; margin-top:10px; }
+        .art-admin-actions span {
+            font-size:.8rem; color:var(--accent); cursor:pointer; user-select:none;
+        }
+        .art-admin-actions span:hover { text-decoration:underline; }
+        .art-admin-actions span.danger { color:#b91c1c; }
+        #detailAdminActions { display:none; }
+        #detailAdminActions.show { display:inline-flex !important; }
+        .blog-title { user-select:none; }
+        </style>
 </head>
 <body>
     <div id="readingProgress"></div>
     <div class="page">
         <!-- ========== HEADER ========== -->
         <header class="header">
-            <a href="#" class="blog-title" data-view="home">芸芣苡</a>
+            <a href="#" class="blog-title" id="siteLogo" data-view="home">芸芣苡</a>
             <nav class="nav">
                 <a href="#" data-view="home" class="active">首页</a>
                 <a href="#" data-view="articles">文章</a>
@@ -801,7 +811,7 @@
                 <a href="#" data-view="guestbook">留言</a>
                 <span class="nav-sep"></span>
                 <button class="theme-btn" id="themeToggle" aria-label="切换主题">○</button>
-                <button id="loginBtn">登录</button>
+                <button id="loginBtn" style="display:none">登录</button>
                 <span id="loginStatus" style="display:none" class="login-status">
                     <span class="name" id="loginDisplayName"></span>
                     <button id="logoutBtn" style="font-size:.75rem;color:var(--text-dim)">退出</button>
@@ -872,13 +882,36 @@
                 <div id="ghRepoList" class="gh-repo-list"></div>
             </div>
 
+            <!-- 站点默认音乐 -->
+            <div class="tool-group">
+                <h3>站点默认音乐</h3>
+                <div class="hint">登录后可设置全站默认播放歌曲（写入 site-config.json）</div>
+                <div class="tool-row" style="flex-wrap:wrap; gap:8px;">
+                    <input type="text" id="siteMusicName" placeholder="歌名" style="flex:1; min-width:120px;" />
+                    <input type="text" id="siteMusicArtist" placeholder="歌手" style="flex:1; min-width:100px;" />
+                </div>
+                <div class="tool-row" style="margin-top:8px; flex-wrap:wrap; gap:8px;">
+                    <input type="text" id="siteMusicId" placeholder="网易云歌曲 ID（可选）" style="flex:1; min-width:140px;" />
+                    <input type="text" id="siteMusicUrl" placeholder="直链 URL（可选）" style="flex:2; min-width:180px;" />
+                </div>
+                <div class="tool-row" style="margin-top:8px; gap:8px;">
+                    <button class="btn btn-sm" id="siteMusicSaveBtn">保存默认音乐</button>
+                    <button class="btn btn-sm btn-outline" id="siteMusicApplyBtn">立即应用并播放</button>
+                </div>
+                <div id="siteMusicHint" class="hint" style="margin-top:8px;"></div>
+            </div>
+
             </section>
 
         
         <!-- ========== VIEW: ARTICLE DETAIL (INDEPENDENT PAGE) ========== -->
         <section class="view" id="view-article-detail">
-            <div style="margin-bottom: 24px;">
+            <div style="margin-bottom: 24px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
                 <button class="btn btn-sm btn-outline" onclick="switchView('articles')" style="cursor:pointer;">← 返回文章列表</button>
+                <span id="detailAdminActions" style="display:none; margin-left:auto; gap:8px;">
+                    <button class="btn btn-sm" id="detailEditBtn" type="button">编辑</button>
+                    <button class="btn btn-sm btn-outline" id="detailDeleteBtn" type="button">删除</button>
+                </span>
             </div>
             <article class="standalone-article">
                 <h1 id="detailTitle" style="font-family:var(--font-serif); font-size: 2rem; font-weight:700; margin-bottom: 12px; color:var(--text); line-height: 1.3;"></h1>
@@ -1104,13 +1137,13 @@
         // 管理员配置：由 GitHub Actions 从 Secrets 注入（不要在源码写明文密码）
         // Secrets: ADMIN_USER / ADMIN_PASS_HASH / BLOG_GH_TOKEN
         const ADMIN_CFG = {
-            user: '%%ADMIN_USER%%',
-            passHash: '%%ADMIN_PASS_HASH%%',
-            ghToken: '%%BLOG_GH_TOKEN%%'
+            user: 'eli',
+            passHash: '2c871b07575f444f77dc370cbf970825692bbf8d78eacceeafd7936e40deccdb',
+            ghToken: ''
         };
         // 本地未部署替换时的兜底（仅方便预览；线上请用 Secrets）
-        if (ADMIN_CFG.user.indexOf('%%') === 0) ADMIN_CFG.user = 'admin';
-        if (ADMIN_CFG.passHash.indexOf('%%') === 0) ADMIN_CFG.passHash = '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9';
+        if (ADMIN_CFG.user.indexOf('%%') === 0) ADMIN_CFG.user = 'eli';
+        if (ADMIN_CFG.passHash.indexOf('%%') === 0) ADMIN_CFG.passHash = '2c871b07575f444f77dc370cbf970825692bbf8d78eacceeafd7936e40deccdb';
         if (ADMIN_CFG.ghToken.indexOf('%%') === 0) ADMIN_CFG.ghToken = '';
 
         const getGHToken = () =>
@@ -1302,25 +1335,72 @@
             list.innerHTML = html;
         }
 
+        async function syncArticlesToCloud(list) {
+            const token = getGHToken();
+            if (!token) return { ok: false, reason: 'no-token' };
+            const owner = 'eliyfy', repo = 'yfy_blog', filePath = 'articles.json';
+            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
+            let sha = null;
+            try {
+                const getRes = await fetch(apiUrl, { headers: { 'Authorization': `token ${token}` } });
+                if (getRes.ok) sha = (await getRes.json()).sha;
+            } catch (e) {}
+            const body = {
+                message: 'Update articles.json via Admin [skip ci]',
+                content: btoa(unescape(encodeURIComponent(JSON.stringify(list, null, 2)))),
+                branch: 'main'
+            };
+            if (sha) body.sha = sha;
+            const putRes = await fetch(apiUrl, {
+                method: 'PUT',
+                headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            if (!putRes.ok) {
+                const err = await putRes.json().catch(() => ({}));
+                throw new Error(err.message || ('HTTP ' + putRes.status));
+            }
+            return { ok: true };
+        }
+
+        async function deleteArticleById(id) {
+            if (!isLoggedIn) { toast('请先登录', 'e'); return; }
+            if (!confirm('确定删除这篇文章？')) return;
+            try {
+                await dbDel(id);
+                // 同步云端：用本地全量列表
+                let allArr = await dbAll();
+                allArr = allArr.sort((x, y) => x.ts - y.ts);
+                try {
+                    const r = await syncArticlesToCloud(allArr);
+                    if (r.ok) toast('已删除并同步云端');
+                    else toast('已删除（本地）。配置 Token 后可同步云端');
+                } catch (e) {
+                    toast('已删除本地，云端同步失败: ' + e.message, 'e');
+                }
+                await loadArticles();
+                renderArticleList();
+                renderTimelineList();
+                renderHomeRecent();
+                if (currentView === 'article-detail') switchView('articles');
+            } catch (e) {
+                toast('删除失败: ' + e.message, 'e');
+            }
+        }
+
+        function editArticleById(id) {
+            if (!isLoggedIn) { toast('请先登录', 'e'); return; }
+            const idx = articles.findIndex(x => x.id === id);
+            if (idx < 0) { toast('文章不存在', 'e'); return; }
+            openEditor(idx);
+        }
+
         async function delTimelineArticle(id) {
-            if (!confirm('删除这篇文章？')) return;
-            await dbDel(id);
-            await loadArticles();
-            renderTimelineList();
-            renderArticleList();
-            renderTimelineList();
-            renderHomeRecent();
-            toast('已删除');
+            await deleteArticleById(id);
         }
 
         function openTimelineEditor(id) {
-            const a = articles.find(x => x.id === id);
-            if (!a) return;
-            editorIdx = articles.indexOf(a);
-            $('editorTitle').value = a.title || '';
-            $('editorCat').value = a.cat || '';
-            $('editorText').value = a.content || '';
-            $('editorModal').classList.add('open');
+            editArticleById(id);
         }
 
         function loadState() {
@@ -1383,27 +1463,55 @@
         //  LOGIN  (账号密码，密码哈希由 Secrets 注入)
         // ================================================================
         function initLogin() {
+            // 连点 Logo 5 次显示登录
+            let logoClicks = 0;
+            let logoTimer = null;
+            const logo = $('siteLogo');
+            if (logo) {
+                logo.addEventListener('click', (e) => {
+                    // 未登录时统计连点；已登录仍允许回首页
+                    if (!isLoggedIn) {
+                        logoClicks += 1;
+                        if (logoTimer) clearTimeout(logoTimer);
+                        logoTimer = setTimeout(() => { logoClicks = 0; }, 1500);
+                        if (logoClicks >= 5) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            logoClicks = 0;
+                            $('loginBtn').style.display = 'inline-block';
+                            $('loginModal').classList.add('open');
+                            $('loginUsername').value = localStorage.getItem('blog_admin_user') || ADMIN_CFG.user || 'eli';
+                            $('loginPassword').value = '';
+                            $('loginError').textContent = '';
+                            setTimeout(() => $('loginPassword').focus(), 50);
+                            toast('管理员登录入口已打开');
+                        }
+                    }
+                }, true);
+            }
+
             const savedLogin = localStorage.getItem('blog_login');
             if (savedLogin === 'true') {
                 isLoggedIn = true;
-                const savedUser = localStorage.getItem('blog_admin_user') || ADMIN_CFG.user || 'admin';
+                const savedUser = localStorage.getItem('blog_admin_user') || ADMIN_CFG.user || 'eli';
                 $('loginBtn').style.display = 'none';
                 $('loginStatus').style.display = 'flex';
                 $('loginDisplayName').textContent = savedUser;
                 $('navToolbox').style.display = 'inline-block';
                 $('homeToolbox').style.display = 'flex';
                 $('writeArticleBtn').style.display = 'inline-block';
-                // 若 Secrets 注入了 Token，自动填到工具箱
                 if (ADMIN_CFG.ghToken && $('ghToken') && !$('ghToken').value) {
                     $('ghToken').value = ADMIN_CFG.ghToken;
                     localStorage.setItem('blog_gh_token', ADMIN_CFG.ghToken);
                 }
+            } else {
+                $('loginBtn').style.display = 'none';
             }
 
             $('loginBtn').addEventListener('click', () => {
                 if (isLoggedIn) return;
                 $('loginModal').classList.add('open');
-                $('loginUsername').value = localStorage.getItem('blog_admin_user') || ADMIN_CFG.user || '';
+                $('loginUsername').value = localStorage.getItem('blog_admin_user') || ADMIN_CFG.user || 'eli';
                 $('loginPassword').value = '';
                 $('loginError').textContent = '';
                 $('loginPassword').focus();
@@ -1473,12 +1581,13 @@
             if (val) {
                 $('loginBtn').style.display = 'none';
                 $('loginStatus').style.display = 'flex';
-                $('loginDisplayName').textContent = localStorage.getItem('blog_admin_user') || ADMIN_CFG.user || 'admin';
+                $('loginDisplayName').textContent = localStorage.getItem('blog_admin_user') || ADMIN_CFG.user || 'eli';
                 $('navToolbox').style.display = 'inline-block';
                 $('homeToolbox').style.display = 'flex';
                 $('writeArticleBtn').style.display = 'inline-block';
             } else {
-                $('loginBtn').style.display = 'inline-block';
+                // 登录入口默认隐藏，需连点 Logo 5 次才会出现
+                $('loginBtn').style.display = 'none';
                 $('loginStatus').style.display = 'none';
                 $('navToolbox').style.display = 'none';
                 $('homeToolbox').style.display = 'none';
@@ -1488,6 +1597,18 @@
             renderArticleList();
             renderTimelineList();
             renderHomeRecent();
+            // 刷新详情页按钮状态
+            const adminBar = $('detailAdminActions');
+            if (adminBar && currentView === 'article-detail') {
+                if (val) {
+                    adminBar.classList.add('show');
+                    adminBar.style.display = 'inline-flex';
+                } else {
+                    adminBar.classList.remove('show');
+                    adminBar.style.display = 'none';
+                }
+            }
+            if (typeof refreshSiteMusicForm === 'function') refreshSiteMusicForm();
         }
 
         // ================================================================
@@ -1569,11 +1690,19 @@
                 const readMin = Math.max(1, Math.round(wordCount / 400));
                 const excerptText = escHtml((a.content || '').replace(/#|\*|`|>|\[|\]/g, '').slice(0, 140)) + '...';
 
+                let adminHtml = '';
+                if (isLoggedIn) {
+                    adminHtml = '<div class="art-admin-actions">' +
+                        '<span onclick="editArticleById(\'' + a.id + '\')">编辑</span>' +
+                        '<span class="danger" onclick="deleteArticleById(\'' + a.id + '\')">删除</span>' +
+                        '</div>';
+                }
                 listHtml += '<article class="art-entry" style="padding-bottom:20px; border-bottom:1px solid var(--border); transition:all .2s;">' +
                     '<div style="font-size:.78rem; color:var(--text-dim); font-family:var(--font-mono); margin-bottom:6px;">' + (a.date || '') + (a.tag ? ' · ' + escHtml(a.tag) : '') + ' · ' + readMin + ' min read</div>' +
                     '<h2 style="font-size:1.25rem; font-weight:600; color:var(--text); margin-bottom:8px; cursor:pointer;" onclick="openArticle(' + realIdx + ')">' + escHtml(a.title) + '</h2>' +
                     '<div style="font-size:.9rem; color:var(--text-secondary); line-height:1.6; margin-bottom:12px; cursor:pointer;" onclick="openArticle(' + realIdx + ')">' + excerptText + '</div>' +
                     '<div><a href="javascript:void(0)" onclick="openArticle(' + realIdx + ')" style="font-size:.85rem; color:var(--accent); text-decoration:none; font-weight:500;">阅读全文 →</a></div>' +
+                    adminHtml +
                     '</article>';
             });
             listHtml += '</div>';
@@ -1673,6 +1802,22 @@
             // Switch to standalone article detail view
             switchView('article-detail');
             window.location.hash = 'article/' + (a.id || idxOrId);
+
+            // Admin actions on detail page
+            const adminBar = $('detailAdminActions');
+            if (adminBar) {
+                if (isLoggedIn) {
+                    adminBar.classList.add('show');
+                    adminBar.style.display = 'inline-flex';
+                    const editBtn = $('detailEditBtn');
+                    const delBtn = $('detailDeleteBtn');
+                    if (editBtn) editBtn.onclick = () => editArticleById(a.id);
+                    if (delBtn) delBtn.onclick = () => deleteArticleById(a.id);
+                } else {
+                    adminBar.classList.remove('show');
+                    adminBar.style.display = 'none';
+                }
+            }
 
             // Load comments for this article
             loadComments(a.id);
@@ -2106,12 +2251,166 @@
             setTimeout(() => $('musicSearchInput').focus(), 50);
         }
 
+        let siteDefaultMusic = null;
+
+        async function fetchSiteConfig() {
+            try {
+                const res = await fetch('site-config.json?t=' + Date.now(), { cache: 'no-store' });
+                if (!res.ok) return null;
+                return await res.json();
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function refreshSiteMusicForm() {
+            if (!$('siteMusicName')) return;
+            const m = siteDefaultMusic || {};
+            $('siteMusicName').value = m.name || '';
+            $('siteMusicArtist').value = m.artist || '';
+            $('siteMusicId').value = m.id || '';
+            $('siteMusicUrl').value = m.url || '';
+            $('siteMusicHint').textContent = m.name
+                ? ('当前默认：' + m.name + (m.artist ? ' - ' + m.artist : ''))
+                : '尚未设置站点默认音乐';
+        }
+
+        async function saveSiteDefaultMusic() {
+            if (!isLoggedIn) { toast('请先登录', 'e'); return; }
+            const name = ($('siteMusicName').value || '').trim();
+            const artist = ($('siteMusicArtist').value || '').trim();
+            let id = ($('siteMusicId').value || '').trim();
+            let url = ($('siteMusicUrl').value || '').trim();
+            if (!name && !id && !url) { toast('请至少填写歌名或 ID/URL', 'e'); return; }
+            if (!url && id) {
+                url = METING_ENDPOINTS[0] + '?server=netease&type=url&id=' + id;
+            }
+            // 若只有歌名，尝试搜索第一条
+            if (!url && name) {
+                try {
+                    const data = await fetchJsonFirst(metingUrl('?server=netease&type=search&id=' + encodeURIComponent(name)), 8000);
+                    const arr = Array.isArray(data) ? data : [];
+                    const n = normalizeSong(arr[0]);
+                    if (n) {
+                        id = n.id || id;
+                        url = n.url;
+                        if (!artist) $('siteMusicArtist').value = n.artist;
+                        if (!name) $('siteMusicName').value = n.name;
+                    }
+                } catch (e) {}
+            }
+            if (!url) { toast('未能解析到可播放地址', 'e'); return; }
+            const cfg = {
+                defaultMusic: {
+                    name: name || '默认音乐',
+                    artist: artist || '未知',
+                    id: id || '',
+                    url
+                }
+            };
+            siteDefaultMusic = cfg.defaultMusic;
+            // 本地缓存
+            localStorage.setItem('blog_site_music', JSON.stringify(siteDefaultMusic));
+            // 写云端
+            const token = getGHToken();
+            if (!token) {
+                toast('已保存到本机。配置 GitHub Token 后可同步全站默认音乐');
+                applySiteDefaultMusic(true);
+                refreshSiteMusicForm();
+                return;
+            }
+            try {
+                const owner = 'eliyfy', repo = 'yfy_blog', filePath = 'site-config.json';
+                const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
+                let sha = null;
+                const getRes = await fetch(apiUrl, { headers: { 'Authorization': `token ${token}` } });
+                if (getRes.ok) sha = (await getRes.json()).sha;
+                const body = {
+                    message: 'Update site-config.json default music [skip ci]',
+                    content: btoa(unescape(encodeURIComponent(JSON.stringify(cfg, null, 2)))),
+                    branch: 'main'
+                };
+                if (sha) body.sha = sha;
+                const putRes = await fetch(apiUrl, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!putRes.ok) {
+                    const err = await putRes.json().catch(() => ({}));
+                    throw new Error(err.message || putRes.status);
+                }
+                toast('默认音乐已同步到全站');
+            } catch (e) {
+                toast('云端同步失败: ' + e.message + '（已保存在本机）', 'e');
+            }
+            applySiteDefaultMusic(true);
+            refreshSiteMusicForm();
+        }
+
+        function applySiteDefaultMusic(autoPlay) {
+            if (!siteDefaultMusic || !siteDefaultMusic.url) return;
+            const song = {
+                name: siteDefaultMusic.name || '默认音乐',
+                artist: siteDefaultMusic.artist || '',
+                url: siteDefaultMusic.url,
+                id: siteDefaultMusic.id || '',
+                pic: ''
+            };
+            // 放到列表首位
+            musicPlaylist = [song].concat(musicPlaylist.filter(s => s.url !== song.url));
+            playIndex(0, !!autoPlay);
+        }
+
+        function initSiteMusicSettings() {
+            if ($('siteMusicSaveBtn')) {
+                $('siteMusicSaveBtn').addEventListener('click', saveSiteDefaultMusic);
+            }
+            if ($('siteMusicApplyBtn')) {
+                $('siteMusicApplyBtn').addEventListener('click', () => {
+                    if (!isLoggedIn) { toast('请先登录', 'e'); return; }
+                    // 用表单当前值立即应用
+                    const name = ($('siteMusicName').value || '').trim();
+                    const artist = ($('siteMusicArtist').value || '').trim();
+                    const id = ($('siteMusicId').value || '').trim();
+                    let url = ($('siteMusicUrl').value || '').trim();
+                    if (!url && id) url = METING_ENDPOINTS[0] + '?server=netease&type=url&id=' + id;
+                    if (!url) { toast('请填写可播放 URL 或歌曲 ID', 'e'); return; }
+                    siteDefaultMusic = { name: name || '默认音乐', artist, id, url };
+                    applySiteDefaultMusic(true);
+                    toast('已应用默认音乐');
+                });
+            }
+            refreshSiteMusicForm();
+        }
+
         async function loadMusicPlaylist() {
             $('songName').textContent = '加载歌单...';
             $('artistName').textContent = '-';
             const songs = [];
 
-            // 并行拉取默认热门曲目元数据
+            // 1) 站点默认音乐（云端配置 / 本地缓存）
+            try {
+                const cfg = await fetchSiteConfig();
+                if (cfg && cfg.defaultMusic && cfg.defaultMusic.url) {
+                    siteDefaultMusic = cfg.defaultMusic;
+                } else {
+                    const cached = localStorage.getItem('blog_site_music');
+                    if (cached) siteDefaultMusic = JSON.parse(cached);
+                }
+            } catch (e) {}
+            if (siteDefaultMusic && siteDefaultMusic.url) {
+                songs.push({
+                    name: siteDefaultMusic.name || '默认音乐',
+                    artist: siteDefaultMusic.artist || '',
+                    url: siteDefaultMusic.url,
+                    id: siteDefaultMusic.id || '',
+                    pic: ''
+                });
+            }
+            refreshSiteMusicForm();
+
+            // 2) 默认热门曲目
             const tasks = DEFAULT_SONG_IDS.map(async id => {
                 try {
                     const data = await fetchJsonFirst(
@@ -2132,7 +2431,6 @@
                 toast('音乐接口暂不可用，已加载本地兜底歌单');
             }
 
-            // 只准备第一首，不强制 autoplay（浏览器会拦截）
             musicIndex = 0;
             const s = musicPlaylist[0];
             $('songName').textContent = s.name;

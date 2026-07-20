@@ -840,6 +840,78 @@
         #detailAdminActions { display:none; }
         #detailAdminActions.show { display:inline-flex !important; }
 
+        
+        /* ===== Article covers + lazy images ===== */
+        .cover-thumb {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg-soft);
+            display: block;
+            margin-bottom: 12px;
+            opacity: 0;
+            transition: opacity .35s ease, transform .2s ease;
+        }
+        .cover-thumb.is-loaded, .cover-thumb.no-lazy { opacity: 1; }
+        .cover-thumb-wrap {
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--bg-soft), var(--bg-card));
+            border: 1px solid var(--border);
+            aspect-ratio: 16 / 9;
+        }
+        .cover-thumb-wrap .cover-thumb {
+            margin: 0; border: none; border-radius: 0;
+            height: 100%; width: 100%;
+        }
+        .cover-thumb-wrap.skeleton::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent);
+            animation: coverShimmer 1.2s infinite;
+        }
+        @keyframes coverShimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .home-recent-item .cover-thumb-wrap { margin-bottom: 10px; }
+        .art-entry .cover-thumb-wrap { margin-bottom: 14px; cursor: pointer; }
+        .art-entry:hover .cover-thumb { transform: scale(1.01); }
+        .detail-cover-wrap {
+            margin: 8px 0 22px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: var(--bg-soft);
+            aspect-ratio: 21 / 9;
+            max-height: 320px;
+        }
+        .detail-cover-wrap img {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+            opacity: 0; transition: opacity .4s ease;
+        }
+        .detail-cover-wrap img.is-loaded { opacity: 1; }
+        .cover-editor { display: flex; flex-direction: column; gap: 10px; }
+        .cover-editor-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .cover-editor-row input[type="text"] { flex: 1; min-width: 180px; }
+        .cover-preview-box {
+            width: 100%; max-width: 320px; aspect-ratio: 16/9;
+            border: 1px dashed var(--border); border-radius: 10px;
+            background: var(--bg-soft); overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-dim); font-size: .82rem;
+        }
+        .cover-preview-box img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        .cover-preview-box.has-img img { display: block; }
+        .cover-preview-box.has-img span { display: none; }
+        .cover-hint { font-size: .78rem; color: var(--text-dim); line-height: 1.5; }
+        img.lazy-img { opacity: 0; transition: opacity .35s ease; }
+        img.lazy-img.is-loaded { opacity: 1; }
+
         /* ===== Paper scholar UX polish ===== */
         .art-entry {
             padding: 18px 16px !important;
@@ -1244,7 +1316,8 @@
                 </span>
             </div>
             <article class="standalone-article">
-                <h1 id="detailTitle" style="font-family:var(--font-serif); font-size: 2rem; font-weight:700; margin-bottom: 12px; color:var(--text); line-height: 1.3;"></h1>
+                <div class="detail-cover-wrap" id="detailCoverWrap" style="display:none"><img id="detailCoverImg" alt="封面" loading="lazy" decoding="async" /></div>
+            <h1 id="detailTitle" style="font-family:var(--font-serif); font-size: 2rem; font-weight:700; margin-bottom: 12px; color:var(--text); line-height: 1.3;"></h1>
                 <div class="art-meta" id="detailMeta" style="font-size: .85rem; color: var(--text-dim); margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid var(--border);"></div>
                 <div class="art-content" id="detailContent" style="font-size: 1.02rem; line-height: 1.95; color: var(--text);"></div>
             </article>
@@ -1338,6 +1411,19 @@
             <div class="editor-field">
                 <label for="editTag">分类</label>
                 <input type="text" id="editTag" placeholder="分类标签（可选）" />
+            </div>
+            <div class="editor-field">
+                <label>封面图（可选）</label>
+                <div class="cover-editor">
+                    <div class="cover-editor-row">
+                        <input type="text" id="editCover" placeholder="封面图 URL，如 covers/xxx.jpg 或 https://..." />
+                        <input type="file" id="editCoverFile" accept="image/*" style="display:none" />
+                        <button type="button" class="btn-outline btn-sm" id="editCoverPick">本地上传</button>
+                        <button type="button" class="btn-outline btn-sm" id="editCoverClear">清除</button>
+                    </div>
+                    <div class="cover-preview-box" id="editCoverPreview"><span>暂无封面预览</span><img id="editCoverPreviewImg" alt="封面预览" /></div>
+                    <div class="cover-hint">支持图片链接，或本地上传（自动压缩）。首页/列表/详情显示，并启用懒加载。</div>
+                </div>
             </div>
             <div class="editor-field">
                 <div class="gh-editor-tabs">
@@ -1733,6 +1819,7 @@
                 html += '</div></div>';
             });
             list.innerHTML = html;
+            hydrateLazyImages(list);
         }
 
         async function syncArticlesToCloud(list) {
@@ -2101,7 +2188,9 @@
                         '<span class="danger" onclick="deleteArticleById(\'' + a.id + '\')">删除</span>' +
                         '</div>';
                 }
+                const cover = getArticleCover(a);
                 listHtml += '<article class="art-entry" style="padding-bottom:20px; border-bottom:1px solid var(--border); transition:all .2s;">' +
+                    coverImgHtml(cover, '', 'openArticle(' + realIdx + ')') +
                     '<div style="font-size:.78rem; color:var(--text-dim); font-family:var(--font-mono); margin-bottom:6px;">' + (a.date || '') + (a.tag ? ' · ' + escHtml(a.tag) : '') + ' · ' + readMin + ' min read</div>' +
                     '<h2 style="font-size:1.25rem; font-weight:600; color:var(--text); margin-bottom:8px; cursor:pointer;" onclick="openArticle(' + realIdx + ')">' + escHtml(a.title) + '</h2>' +
                     '<div style="font-size:.9rem; color:var(--text-secondary); line-height:1.6; margin-bottom:12px; cursor:pointer;" onclick="openArticle(' + realIdx + ')">' + excerptText + '</div>' +
@@ -2113,6 +2202,7 @@
 
             container.innerHTML = searchHtml + listHtml;
             bindSearchInput();
+            hydrateLazyImages(container);
         }
 
         function bindSearchInput() {
@@ -2140,6 +2230,130 @@
                 .replace(/\s+/g, ' ')
                 .trim();
         }
+        
+        function getArticleCover(a) {
+            if (!a) return '';
+            return String(a.cover || a.coverUrl || '').trim();
+        }
+        function coverImgHtml(src, cls, onclick) {
+            if (!src) return '';
+            const oc = onclick ? (' onclick="' + onclick + '"') : '';
+            return '<div class="cover-thumb-wrap skeleton"' + oc + '>' +
+                '<img class="cover-thumb lazy-img ' + (cls || '') + '" data-src="' + escHtml(src) + '" alt="封面" loading="lazy" decoding="async" />' +
+                '</div>';
+        }
+        function hydrateLazyImages(root) {
+            const scope = root || document;
+            const imgs = scope.querySelectorAll('img.lazy-img, img[data-src]');
+            const loadOne = (img) => {
+                const src = img.getAttribute('data-src') || img.getAttribute('src');
+                if (!src) return;
+                if (img.dataset.hydrated === '1') return;
+                img.dataset.hydrated = '1';
+                const done = () => {
+                    img.classList.add('is-loaded');
+                    const wrap = img.closest('.cover-thumb-wrap, .detail-cover-wrap');
+                    if (wrap) wrap.classList.remove('skeleton');
+                };
+                img.addEventListener('load', done, { once: true });
+                img.addEventListener('error', () => {
+                    const wrap = img.closest('.cover-thumb-wrap, .detail-cover-wrap');
+                    if (wrap) wrap.style.display = 'none';
+                }, { once: true });
+                if (img.getAttribute('src') !== src) img.src = src;
+                if (img.complete && img.naturalWidth) done();
+            };
+            if ('IntersectionObserver' in window) {
+                const io = new IntersectionObserver((entries) => {
+                    entries.forEach(en => {
+                        if (en.isIntersecting) {
+                            loadOne(en.target);
+                            io.unobserve(en.target);
+                        }
+                    });
+                }, { rootMargin: '120px 0px', threshold: 0.01 });
+                imgs.forEach(img => {
+                    const rect = img.getBoundingClientRect();
+                    if (rect.top < window.innerHeight + 80) loadOne(img);
+                    else io.observe(img);
+                });
+            } else {
+                imgs.forEach(loadOne);
+            }
+        }
+        function updateCoverPreview(url) {
+            const box = $('editCoverPreview');
+            const img = $('editCoverPreviewImg');
+            const input = $('editCover');
+            if (input && url !== undefined) input.value = url || '';
+            const src = (url !== undefined ? url : ((input && input.value) || '')).trim();
+            if (!box || !img) return;
+            if (!src) {
+                box.classList.remove('has-img');
+                img.removeAttribute('src');
+                return;
+            }
+            img.onload = () => box.classList.add('has-img');
+            img.onerror = () => box.classList.remove('has-img');
+            img.src = src;
+        }
+        function compressImageFile(file, maxSide, quality) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(new Error('读取图片失败'));
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let w = img.width, h = img.height;
+                        const max = maxSide || 1280;
+                        if (w > max || h > max) {
+                            const r = Math.min(max / w, max / h);
+                            w = Math.round(w * r);
+                            h = Math.round(h * r);
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        let q = quality || 0.82;
+                        let data = canvas.toDataURL('image/jpeg', q);
+                        while (data.length > 1.6e6 && q > 0.5) {
+                            q -= 0.08;
+                            data = canvas.toDataURL('image/jpeg', q);
+                        }
+                        resolve(data);
+                    };
+                    img.onerror = () => reject(new Error('图片解码失败'));
+                    img.src = reader.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        function initCoverEditor() {
+            const pick = $('editCoverPick');
+            const file = $('editCoverFile');
+            const clear = $('editCoverClear');
+            const input = $('editCover');
+            if (pick && file) {
+                pick.onclick = () => file.click();
+                file.onchange = async () => {
+                    const f = file.files && file.files[0];
+                    if (!f) return;
+                    if (f.size > 8 * 1024 * 1024) { toast('图片太大，请小于 8MB', 'e'); return; }
+                    try {
+                        toast('压缩封面中…');
+                        const data = await compressImageFile(f, 1400, 0.8);
+                        updateCoverPreview(data);
+                        toast('封面已就绪');
+                    } catch (e) {
+                        toast('封面处理失败: ' + e.message, 'e');
+                    }
+                    file.value = '';
+                };
+            }
+            if (clear) clear.onclick = () => updateCoverPreview('');
+            if (input) input.addEventListener('input', () => updateCoverPreview(input.value.trim()));
+        }
+
         function extractExcerpt(md, n) {
             const t = stripMd(md);
             if (!t) return '暂无摘要';
@@ -2200,7 +2414,9 @@
                 const id = a.id || '';
                 const tag = a.tag ? '<span class="tag-pill">' + escHtml(a.tag) + '</span>' : '';
                 const mins = readingMinutes(a.content);
+                const cover = getArticleCover(a);
                 html += '<div class="home-recent-item clickable" onclick="openArticle(\'' + id + '\')">' +
+                    coverImgHtml(cover, '', '') +
                     '<div class="row"><span class="title">' + escHtml(a.title) + '</span><span class="date">' + escHtml(a.date || '') + '</span></div>' +
                     '<div class="meta">' + tag + '<span>' + mins + ' read</span></div>' +
                     '<div class="excerpt">' + escHtml(extractExcerpt(a.content, 90)) + '</div>' +
@@ -2222,6 +2438,25 @@
             const wordCount = (a.content || '').replace(/<[^>]*>/g, '').length;
             const readMin = Math.max(1, Math.ceil(wordCount / 400));
             $('detailMeta').textContent = (a.tag ? a.tag + ' · ' : '') + (a.date || '') + ' · ' + readMin + ' min read';
+
+            const dWrap = $('detailCoverWrap');
+            const dImg = $('detailCoverImg');
+            const csrc = getArticleCover(a);
+            if (dWrap && dImg) {
+                if (csrc) {
+                    dWrap.style.display = 'block';
+                    dWrap.classList.add('skeleton');
+                    dImg.classList.remove('is-loaded');
+                    dImg.dataset.hydrated = '';
+                    dImg.setAttribute('data-src', csrc);
+                    dImg.removeAttribute('src');
+                    hydrateLazyImages(dWrap);
+                } else {
+                    dWrap.style.display = 'none';
+                    dImg.removeAttribute('src');
+                    dImg.removeAttribute('data-src');
+                }
+            }
 
             let rawHtml = '';
             if (typeof marked !== 'undefined') {
@@ -2246,6 +2481,15 @@
             }
 
             $('detailContent').innerHTML = tocHtml + tempDiv.innerHTML;
+            $('detailContent').querySelectorAll('img').forEach(img => {
+                if (!img.getAttribute('loading')) img.setAttribute('loading', 'lazy');
+                img.setAttribute('decoding', 'async');
+                img.classList.add('lazy-img');
+                if (img.getAttribute('src') && !img.getAttribute('data-src')) {
+                    img.setAttribute('data-src', img.getAttribute('src'));
+                }
+            });
+            hydrateLazyImages($('detailContent'));
 
             if (typeof hljs !== 'undefined') {
                 $('detailContent').querySelectorAll('pre code').forEach(block => {
@@ -2298,11 +2542,13 @@
                 $('editTitle').value = a.title;
                 $('editTag').value = a.tag || '';
                 $('editContent').value = a.content;
+                updateCoverPreview(getArticleCover(a));
             } else {
                 $('editorTitle').textContent = '写文章';
                 $('editTitle').value = '';
                 $('editTag').value = '';
                 $('editContent').value = '';
+                updateCoverPreview('');
             }
             $('editorModal').classList.add('open');
             setTimeout(() => $('editTitle').focus(), 100);
@@ -2317,14 +2563,19 @@
             const title = $('editTitle').value.trim();
             const tag = $('editTag').value.trim();
             const content = $('editContent').value.trim();
+            const cover = (($('editCover') && $('editCover').value) || '').trim();
 
             if (!title || !content) { toast('请填写标题和内容', 'e'); return; }
+            if (cover.startsWith('data:') && cover.length > 1800000) {
+                toast('封面体积过大，请换更小图片或用外链', 'e'); return;
+            }
 
             const id = editingId !== null ? articles[editingId].id : 'a_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
             const ts = editingId !== null ? articles[editingId].ts : Date.now();
             const date = editingId !== null ? articles[editingId].date : new Date().toISOString().split('T')[0];
 
             const a = { id, title, tag, content, ts, date };
+            if (cover) a.cover = cover;
 
             try {
                 await dbPut(a);

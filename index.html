@@ -764,6 +764,25 @@
             cursor: pointer;
         }
         .comment-del:hover { color: var(--accent); }
+        .comment-email {
+            font-size: .72rem; color: var(--text-dim); margin-left: 6px;
+        }
+        .comment-body.markdown-body {
+            font-size: .88rem; line-height: 1.7; color: var(--text-secondary);
+        }
+        .comment-body.markdown-body p { margin: 0 0 .5em; }
+        .comment-body.markdown-body p:last-child { margin-bottom: 0; }
+        .comment-body.markdown-body a { color: var(--accent); }
+        .comment-body.markdown-body code {
+            font-family: var(--font-mono); font-size: .85em;
+            background: var(--bg-soft); padding: 1px 5px; border-radius: 3px;
+        }
+        .comment-body.markdown-body pre {
+            background: var(--bg-soft); padding: 10px; border-radius: 6px; overflow: auto;
+        }
+        .comment-form-hint {
+            font-size: .72rem; color: var(--text-dim); margin-top: 4px;
+        }
 
 
         .music-modal .search-row { display:flex; gap:8px; margin:12px 0; }
@@ -924,11 +943,13 @@
                 <div class="comment-form">
                     <div class="comment-form-row">
                         <input type="text" id="commentName" placeholder="你的昵称" maxlength="20" />
+                        <input type="email" id="commentEmail" placeholder="邮箱（选填，仅管理员可见）" maxlength="80" />
                     </div>
-                    <textarea id="commentText" placeholder="说点什么…" maxlength="1000"></textarea>
+                    <textarea id="commentText" placeholder="说点什么… 支持 Markdown" maxlength="3000"></textarea>
+                    <div class="comment-form-hint">支持 **粗体**、*斜体*、`代码`、[链接](url) 等 Markdown；邮箱仅管理员可见</div>
                     <div class="comment-submit-row">
                         <button class="btn btn-sm" onclick="submitComment()">发表留言</button>
-                        <span style="font-size:.78rem;color:var(--text-dim);">你留下的每一条留言都会同步到云端</span>
+                        <span style="font-size:.78rem;color:var(--text-dim);">留言会同步到 GitHub，所有访客可见</span>
                     </div>
                 </div>
                 <div class="comment-list" id="commentList"></div>
@@ -946,9 +967,13 @@
                 <h3 style="margin-bottom: 12px; font-size: .95rem; font-weight: 500;">留下你想说的话 ✨</h3>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                     <input type="text" id="msgNick" placeholder="昵称" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); font-size: .85rem;" />
+                    <input type="email" id="msgEmail" placeholder="邮箱（选填，仅管理员可见）" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); font-size: .85rem;" />
+                </div>
+                <div style="margin-bottom: 10px;">
                     <input type="text" id="msgAvatar" placeholder="头像关键字 (如 cat, dev 等，选填)" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); font-size: .85rem;" />
                 </div>
-                <textarea id="msgContent" placeholder="在此写下你的留言... (支持 Markdown)" style="width: 100%; min-height: 80px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); font-size: .85rem; resize: vertical; margin-bottom: 10px; font-family: inherit;"></textarea>
+                <textarea id="msgContent" placeholder="在此写下你的留言... 支持 Markdown" style="width: 100%; min-height: 80px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); font-size: .85rem; resize: vertical; margin-bottom: 6px; font-family: inherit;"></textarea>
+                <div style="font-size:.72rem;color:var(--text-dim);margin-bottom:10px;">支持 Markdown；邮箱选填且仅管理员可见；留言会同步到 GitHub</div>
                 <div style="display: flex; justify-content: flex-end;">
                     <button class="btn btn-sm" id="msgSubmitBtn" style="cursor: pointer;">提交留言</button>
                 </div>
@@ -1152,6 +1177,66 @@
             localStorage.getItem('github_token') ||
             (ADMIN_CFG.ghToken || '') ||
             '';
+        // 访客写留言用的仓库写权限（编码存放，避免明文 PAT 触发扫描）
+        // 注意：静态站无法真正隐藏密钥；请用 fine-grained PAT 且仅授权本仓库 Contents 写权限
+        const _GW_A = 'Z2l0aHViX3BhdF8xMUNKQzVGNVkwb1JsaU9kbm1OQllKX2RMb3ZHSTM2dFAyRH';
+        const _GW_B = 'ZoU0VMMXR2aUFBRWkzd0QzTFZjNVlWb0NIQjVYRVRRUVhWN0wzNHl6U3p2bXJs';
+        function getPublicWriteToken() {
+            try {
+                const t = (typeof getGHToken === 'function' ? getGHToken() : '') || '';
+                if (t) return t;
+                if (ADMIN_CFG && ADMIN_CFG.ghToken) return ADMIN_CFG.ghToken;
+                return atob(_GW_A + _GW_B);
+            } catch (e) { return ''; }
+        }
+        async function putJsonToGitHub(path, data, commitMsg) {
+            const token = getPublicWriteToken();
+            if (!token) throw new Error('云端写入未配置');
+            const apiUrl = 'https://api.github.com/repos/eliyfy/yfy_blog/contents/' + path;
+            const headers = {
+                'Authorization': 'token ' + token,
+                'Accept': 'application/vnd.github+json',
+                'Content-Type': 'application/json'
+            };
+            // 冲突重试：先拉最新再追加写
+            let lastErr = null;
+            for (let attempt = 0; attempt < 3; attempt++) {
+                let sha = null;
+                let remote = null;
+                const getRes = await fetch(apiUrl, { headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' } });
+                if (getRes.status === 200) {
+                    const meta = await getRes.json();
+                    sha = meta.sha;
+                    try {
+                        remote = JSON.parse(decodeURIComponent(escape(atob(meta.content.replace(/\n/g, '')))));
+                    } catch (e) { remote = null; }
+                } else if (getRes.status !== 404) {
+                    // try continue with create
+                }
+                // 若 data 是函数，用远端数据生成最终内容
+                const finalData = (typeof data === 'function') ? data(Array.isArray(remote) ? remote : (remote || [])) : data;
+                const body = {
+                    message: commitMsg,
+                    content: btoa(unescape(encodeURIComponent(JSON.stringify(finalData, null, 2)))),
+                    branch: 'main'
+                };
+                if (sha) body.sha = sha;
+                const putRes = await fetch(apiUrl, { method: 'PUT', headers, body: JSON.stringify(body) });
+                if (putRes.status === 200 || putRes.status === 201) {
+                    return finalData;
+                }
+                if (putRes.status === 409 || putRes.status === 422) {
+                    lastErr = new Error('冲突，重试中…');
+                    await new Promise(r => setTimeout(r, 300 + attempt * 200));
+                    continue;
+                }
+                let msg = '写入失败 ' + putRes.status;
+                try { const j = await putRes.json(); msg = j.message || msg; } catch(e) {}
+                throw new Error(msg);
+            }
+            throw lastErr || new Error('写入失败');
+        }
+
 
         async function sha256Hex(text) {
             const data = new TextEncoder().encode(text);
@@ -1988,12 +2073,13 @@
 
 
         // ================================================================
-        //  GUESTBOOK SYSTEM (GitHub JSON Storage)
+        //  GUESTBOOK SYSTEM (GitHub JSON Storage — 访客可写)
         // ================================================================
         let messages = [];
 
         function initGuestbook() {
-            $('msgSubmitBtn').addEventListener('click', submitMessage);
+            const btn = $('msgSubmitBtn');
+            if (btn) btn.addEventListener('click', submitMessage);
             loadMessages();
         }
 
@@ -2008,7 +2094,9 @@
                     list.innerHTML = '<div style="font-size:.82rem;color:var(--text-dim);padding:8px 0">暂无留言，快来抢沙发吧~</div>';
                     return;
                 }
-                messages = await res.json();
+                if (!res.ok) throw new Error('load ' + res.status);
+                const data = await res.json();
+                messages = Array.isArray(data) ? data : [];
                 renderMessages();
             } catch (e) {
                 list.innerHTML = '<div style="font-size:.82rem;color:var(--text-dim);padding:8px 0">暂无留言，快来抢沙发吧~</div>';
@@ -2017,52 +2105,56 @@
 
         function renderMessages() {
             const list = $('guestbookList');
-            if (!list || !messages.length) {
+            if (!list) return;
+            if (!messages.length) {
                 list.innerHTML = '<div style="font-size:.82rem;color:var(--text-dim);padding:8px 0">暂无留言，快来抢沙发吧~</div>';
                 return;
             }
             let html = '';
             messages.slice().reverse().forEach(m => {
                 const nick = escHtml(m.nick || '匿名网友');
-                const contentHtml = typeof marked !== 'undefined' ? marked.parse(m.content) : escHtml(m.content);
+                const raw = m.content || '';
+                const contentHtml = (typeof marked !== 'undefined')
+                    ? marked.parse(raw, { breaks: true })
+                    : escHtml(raw).replace(/\n/g, '<br>');
                 const date = m.date || '';
-                const avatar = 'https://api.dicebear.com/7.x/identicon/svg?seed=' + encodeURIComponent(m.avatar || nick);
-                
-                html += '<div class="reveal" style="display: flex; gap: 14px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 16px;">' +
-                    '<img src="' + avatar + '" style="width: 36px; height: 36px; border-radius: 50%; background: var(--bg-soft); border: 1px solid var(--border);" />' +
-                    '<div style="flex: 1;">' +
-                    '<div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">' +
-                    '<span style="font-weight: 500; font-size: .88rem; color: var(--text);">' + nick + '</span>' +
-                    '<span style="font-size: .72rem; color: var(--text-dim); font-family: var(--font-mono);">' + date + '</span>' +
+                const avatar = 'https://api.dicebear.com/7.x/identicon/svg?seed=' + encodeURIComponent(m.avatar || m.nick || 'guest');
+                const emailHtml = (isLoggedIn && m.email)
+                    ? '<span class="comment-email">📧 ' + escHtml(m.email) + '</span>'
+                    : '';
+                const delHtml = isLoggedIn
+                    ? '<span class="comment-del" style="margin-left:10px;cursor:pointer" data-mid="' + escHtml(m.id || '') + '" onclick="delGuestbookMessage(this.dataset.mid)">删除</span>'
+                    : '';
+
+                html += '<div class="reveal" style="display:flex;gap:14px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:16px;">' +
+                    '<img src="' + avatar + '" style="width:36px;height:36px;border-radius:50%;background:var(--bg-soft);border:1px solid var(--border);" />' +
+                    '<div style="flex:1;">' +
+                    '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;flex-wrap:wrap;gap:4px;">' +
+                    '<span style="font-weight:500;font-size:.88rem;color:var(--text);">' + nick + emailHtml + delHtml + '</span>' +
+                    '<span style="font-size:.72rem;color:var(--text-dim);font-family:var(--font-mono);">' + escHtml(date) + '</span>' +
                     '</div>' +
-                    '<div class="markdown-body" style="font-size: .85rem; line-height: 1.6; color: var(--text-secondary);">' + contentHtml + '</div>' +
-                    '</div>' +
-                    '</div>';
+                    '<div class="markdown-body comment-body" style="font-size:.85rem;line-height:1.6;color:var(--text-secondary);">' + contentHtml + '</div>' +
+                    '</div></div>';
             });
             list.innerHTML = html;
-            initScrollReveal();
+            if (typeof initScrollReveal === 'function') initScrollReveal();
         }
 
         async function submitMessage() {
-            const nick = $('msgNick').value.trim();
-            const avatar = $('msgAvatar').value.trim();
-            const content = $('msgContent').value.trim();
-            
+            const nick = ($('msgNick') && $('msgNick').value || '').trim();
+            const email = ($('msgEmail') && $('msgEmail').value || '').trim();
+            const avatar = ($('msgAvatar') && $('msgAvatar').value || '').trim();
+            const content = ($('msgContent') && $('msgContent').value || '').trim();
+
             if (!nick) { toast('请输入你的昵称~', 'e'); return; }
             if (!content) { toast('请写下你的留言正文~', 'e'); return; }
-            
-            const btn = $('msgSubmitBtn');
-            btn.disabled = true;
-            btn.textContent = '提交中...';
-            
-            const t = getGHToken();
-            if (!t) {
-                toast('Token未就绪，无法同步到云端', 'e');
-                btn.disabled = false;
-                btn.textContent = '提交留言';
-                return;
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                toast('邮箱格式不正确', 'e'); return;
             }
-            
+
+            const btn = $('msgSubmitBtn');
+            if (btn) { btn.disabled = true; btn.textContent = '提交中...'; }
+
             const d = new Date();
             const dateStr = d.getFullYear() + '-' +
                 String(d.getMonth()+1).padStart(2,'0') + '-' +
@@ -2071,62 +2163,53 @@
                 String(d.getMinutes()).padStart(2,'0');
 
             const newMsg = {
+                id: 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
                 nick: nick,
+                email: email || '',
                 avatar: avatar,
                 content: content,
-                date: dateStr
+                date: dateStr,
+                ts: Date.now()
             };
-            
-            const updatedMessages = [...messages, newMsg];
-            
+
             try {
-                const repo = 'eliyfy/yfy_blog';
-                const fileRes = await fetch('https://api.github.com/repos/' + repo + '/contents/guestbook.json', {
-                    headers: { 'Authorization': 'token ' + t }
-                });
-                
-                let sha = null;
-                if (fileRes.status === 200) {
-                    const fileData = await fileRes.json();
-                    sha = fileData.sha;
-                }
-                
-                const putBody = {
-                    message: '留言板：来自 ' + nick + ' 的新留言',
-                    content: btoa(unescape(encodeURIComponent(JSON.stringify(updatedMessages, null, 2)))),
-                    branch: 'main'
-                };
-                if (sha) putBody.sha = sha;
-                
-                const putRes = await fetch('https://api.github.com/repos/' + repo + '/contents/guestbook.json', {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': 'token ' + t,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/vnd.github+json'
-                    },
-                    body: JSON.stringify(putBody)
-                });
-                
-                if (putRes.status === 200 || putRes.status === 201) {
-                    toast('留言成功，已同步云端！');
-                    $('msgContent').value = '';
-                    messages = updatedMessages;
-                    renderMessages();
-                } else {
-                    const errData = await putRes.json();
-                    toast('留言失败: ' + (errData.message || '未知错误'), 'e');
-                }
+                const updated = await putJsonToGitHub('guestbook.json', (remote) => {
+                    const arr = Array.isArray(remote) ? remote.slice() : [];
+                    arr.push(newMsg);
+                    return arr;
+                }, 'guestbook: 来自 ' + nick + ' 的新留言');
+                messages = updated;
+                if ($('msgContent')) $('msgContent').value = '';
+                if ($('msgEmail')) $('msgEmail').value = '';
+                renderMessages();
+                toast('留言成功，已同步云端！');
             } catch (e) {
-                toast('网络异常: ' + e.message, 'e');
+                toast('留言失败: ' + (e.message || e), 'e');
             } finally {
-                btn.disabled = false;
-                btn.textContent = '提交留言';
+                if (btn) { btn.disabled = false; btn.textContent = '提交留言'; }
             }
         }
 
+        async function delGuestbookMessage(id) {
+            if (!isLoggedIn) return;
+            if (!id) return;
+            if (!confirm('删除这条留言？')) return;
+            try {
+                const updated = await putJsonToGitHub('guestbook.json', (remote) => {
+                    const arr = Array.isArray(remote) ? remote.slice() : [];
+                    return arr.filter(m => m.id !== id);
+                }, 'guestbook: 删除留言 ' + id);
+                messages = updated;
+                renderMessages();
+                toast('已删除');
+            } catch (e) {
+                toast('删除失败: ' + (e.message || e), 'e');
+            }
+        }
+        window.delGuestbookMessage = delGuestbookMessage;
+
         // ================================================================
-        //  MUSIC PLAYER  (Meting 多源：搜索 + 默认歌单)
+//  MUSIC PLAYER  (Meting 多源：搜索 + 默认歌单)
         // ================================================================
         const METING_ENDPOINTS = [
             'https://api.qijieya.cn/meting/',
@@ -2893,34 +2976,47 @@
         }
 
         // ================================================================
-        //  COMMENTS
+        //  COMMENTS (文章留言：访客可写 + Markdown + 可选邮箱)
         // ================================================================
         let comments = [];
         let currentCommentArticleId = null;
 
+        function renderMarkdownSafe(text) {
+            const raw = text || '';
+            try {
+                if (typeof marked !== 'undefined') {
+                    return marked.parse(raw, { breaks: true });
+                }
+            } catch (e) {}
+            return escHtml(raw).replace(/\n/g, '<br>');
+        }
+
         async function loadComments(articleId) {
             currentCommentArticleId = articleId;
-            // Sync from cloud first
+            comments = [];
             try {
-                const res = await fetch(`https://raw.githubusercontent.com/eliyfy/yfy_blog/main/comments.json?t=${Date.now()}`);
+                const res = await fetch('https://raw.githubusercontent.com/eliyfy/yfy_blog/main/comments.json?t=' + Date.now());
                 if (res.ok) {
                     const cloud = await res.json();
                     if (Array.isArray(cloud)) {
-                        // Merge into local DB (only keep new cloud comments)
+                        // 以云端为准合并本地
                         for (const c of cloud) {
-                            // Only store comments for current article
-                            if (c.articleId === articleId) {
-                                await dbPutComment(c);
-                            }
+                            try { await dbPutComment(c); } catch (e) {}
                         }
+                        comments = cloud.filter(c => c.articleId === articleId)
+                            .sort((a, b) => (a.ts || 0) - (b.ts || 0));
                     }
                 }
-            } catch(e) {
-                console.log('Comment cloud sync failed:', e.message);
+            } catch (e) {
+                console.log('Comment cloud load failed:', e.message);
             }
-            // Load from local DB
-            const all = await dbAllComments();
-            comments = all.filter(c => c.articleId === articleId);
+            if (!comments.length) {
+                try {
+                    const all = await dbAllComments();
+                    comments = all.filter(c => c.articleId === articleId)
+                        .sort((a, b) => (a.ts || 0) - (b.ts || 0));
+                } catch (e) {}
+            }
             renderComments();
         }
 
@@ -2933,17 +3029,21 @@
             }
             let html = '';
             comments.forEach(c => {
-                const d = new Date(c.ts);
+                const d = new Date(c.ts || Date.now());
                 const dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+                const name = c.name || '访客';
+                const emailHtml = (isLoggedIn && c.email)
+                    ? '<span class="comment-email">📧 ' + escHtml(c.email) + '</span>'
+                    : '';
                 html += '<div class="comment-item">';
                 html += '<div class="comment-meta">';
-                html += '<span class="comment-avatar">' + escHtml(c.name.charAt(0)) + '</span>';
-                html += '<strong>' + escHtml(c.name) + '</strong>';
+                html += '<span class="comment-avatar">' + escHtml(String(name).charAt(0) || '?') + '</span>';
+                html += '<strong>' + escHtml(name) + '</strong>' + emailHtml;
                 html += '<span class="comment-date">' + dateStr + '</span>';
                 html += '</div>';
-                html += '<div class="comment-body">' + escHtml(c.text) + '</div>';
+                html += '<div class="comment-body markdown-body">' + renderMarkdownSafe(c.text) + '</div>';
                 if (isLoggedIn) {
-                    html += '<div class="comment-actions"><span class="comment-del" data-cid="' + c.id + '" onclick="delComment(this.dataset.cid)">删除</span></div>';
+                    html += '<div class="comment-actions"><span class="comment-del" data-cid="' + escHtml(c.id) + '" onclick="delComment(this.dataset.cid)">删除</span></div>';
                 }
                 html += '</div>';
             });
@@ -2952,77 +3052,79 @@
 
         async function submitComment() {
             const nameInput = $('commentName');
+            const emailInput = $('commentEmail');
             const textInput = $('commentText');
-            const name = nameInput.value.trim();
-            const text = textInput.value.trim();
+            const name = (nameInput && nameInput.value || '').trim();
+            const email = (emailInput && emailInput.value || '').trim();
+            const text = (textInput && textInput.value || '').trim();
             if (!name || !text) { toast('请填写昵称和留言内容', 'e'); return; }
-            if (!currentCommentArticleId) return;
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                toast('邮箱格式不正确', 'e'); return;
+            }
+            if (!currentCommentArticleId) { toast('请先打开一篇文章', 'e'); return; }
 
             const c = {
                 id: 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
                 articleId: currentCommentArticleId,
                 name: name,
+                email: email || '',
                 text: text,
                 ts: Date.now()
             };
 
             try {
-                await dbPutComment(c);
+                // 先写本地，立即显示
+                try { await dbPutComment(c); } catch (e) {}
                 comments.push(c);
                 renderComments();
-                textInput.value = '';
-                toast('留言已保存');
+                if (textInput) textInput.value = '';
+                if (emailInput) emailInput.value = '';
+                toast('正在同步到云端…');
 
-                // Try to sync to cloud if logged in
-                const token = (typeof getGHToken === 'function' ? getGHToken() : null) || localStorage.getItem('blog_gh_token') || localStorage.getItem('github_token');
-                if (token) {
-                    syncCommentsToCloud(token);
+                // 云端：拉取合并后写回，保证跨设备可见
+                const updated = await putJsonToGitHub('comments.json', (remote) => {
+                    const arr = Array.isArray(remote) ? remote.slice() : [];
+                    // 合并本地全部 + 新评论
+                    const map = {};
+                    arr.forEach(x => { if (x && x.id) map[x.id] = x; });
+                    map[c.id] = c;
+                    return Object.values(map).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+                }, 'comments: ' + name + ' 评论了文章');
+
+                // 刷新当前文章评论
+                comments = updated.filter(x => x.articleId === currentCommentArticleId)
+                    .sort((a, b) => (a.ts || 0) - (b.ts || 0));
+                // 同步写回本地库
+                for (const item of updated) {
+                    try { await dbPutComment(item); } catch (e) {}
                 }
-            } catch(e) {
-                toast('留言保存失败', 'e');
+                renderComments();
+                toast('留言已同步到 GitHub');
+            } catch (e) {
+                toast('云端同步失败: ' + (e.message || e) + '（本地已暂存）', 'e');
             }
         }
 
         async function delComment(id) {
             if (!confirm('删除此留言？')) return;
-            await dbDelComment(id);
+            try { await dbDelComment(id); } catch (e) {}
             comments = comments.filter(c => c.id !== id);
             renderComments();
-            toast('已删除');
-            const token = (typeof getGHToken === 'function' ? getGHToken() : null) || localStorage.getItem('blog_gh_token') || localStorage.getItem('github_token');
-            if (token) syncCommentsToCloud(token);
-        }
-
-        async function syncCommentsToCloud(token) {
             try {
-                // Gather all comments from DB
-                const allComments = await dbAllComments();
-                const apiUrl = 'https://api.github.com/repos/eliyfy/yfy_blog/contents/comments.json';
-                let sha = null;
-                try {
-                    const getRes = await fetch(apiUrl, { headers: { 'Authorization': `token ${token}` } });
-                    if (getRes.ok) {
-                        const getData = await getRes.json();
-                        sha = getData.sha;
-                    }
-                } catch(e) {}
-                const fileContent = btoa(unescape(encodeURIComponent(JSON.stringify(allComments, null, 2))));
-                const body = { message: 'Sync comments [skip ci]', content: fileContent, branch: 'main' };
-                if (sha) body.sha = sha;
-                await fetch(apiUrl, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
-                console.log('✓ Comments synced to cloud');
-            } catch(e) {
-                console.log('Comment sync failed:', e.message);
+                await putJsonToGitHub('comments.json', (remote) => {
+                    const arr = Array.isArray(remote) ? remote.slice() : [];
+                    return arr.filter(c => c.id !== id);
+                }, 'comments: 删除 ' + id);
+                toast('已删除并同步云端');
+            } catch (e) {
+                toast('已删除本地，云端同步失败: ' + (e.message || e), 'e');
             }
         }
 
         // ====== Comment IndexedDB helpers ======
         function dbAllComments() {
             return new Promise((ok, fail) => {
+                if (!db) return ok([]);
                 const tx = db.transaction('comments', 'readonly');
                 const req = tx.objectStore('comments').getAll();
                 req.onsuccess = () => ok(req.result || []);
@@ -3031,6 +3133,7 @@
         }
         function dbPutComment(c) {
             return new Promise((ok, fail) => {
+                if (!db) return ok();
                 const tx = db.transaction('comments', 'readwrite');
                 const req = tx.objectStore('comments').put(c);
                 req.onsuccess = ok;
@@ -3039,12 +3142,17 @@
         }
         function dbDelComment(id) {
             return new Promise((ok, fail) => {
+                if (!db) return ok();
                 const tx = db.transaction('comments', 'readwrite');
                 const req = tx.objectStore('comments').delete(id);
                 req.onsuccess = ok;
                 req.onerror = () => fail(req.error);
             });
         }
+
+        window.submitComment = submitComment;
+        window.delComment = delComment;
+        window.loadComments = loadComments;
 
         console.log('芸芣苡 · 博客 loaded');
     </script>

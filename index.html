@@ -2450,7 +2450,7 @@
                 html += '</div>';
                 html += '<div class="comment-body">' + escHtml(c.text) + '</div>';
                 if (isLoggedIn) {
-                    html += '<div class="comment-actions"><span class="comment-del" onclick="delComment(\\'' + c.id + '\\')">删除</span></div>';
+                    html += '<div class="comment-actions"><span class="comment-del" data-cid="' + c.id + '" onclick="delComment(this.dataset.cid)">删除</span></div>';
                 }
                 html += '</div>';
             });

@@ -1,0 +1,42 @@
+[
+  {
+    "id": "a_17001",
+    "title": "你好，世界 —— 新博客启航",
+    "tag": "随笔",
+    "content": "## 为什么写博客\n\n一直以来都想有个自己的地方写点东西。技术笔记也好，生活感悟也好，哪怕只是几行随手的思考。\n\n> 「写作是为了让人理解，而不仅仅是表达。」\n\n## 关于这个博客\n\n这是一个 **纯前端静态博客**，托管在 GitHub Pages 上。\n\n- 📝 基于 Markdown 写作\n- 🌙 支持深色/浅色主题\n- ⏱ 时间线视图\n- 📖 独立文章页面\n\n以后会陆续更新技术文章和生活记录。\n\n欢迎常来看看 👋",
+    "ts": 1721000000000,
+    "date": "2025-07-20"
+  },
+  {
+    "id": "a_17002",
+    "title": "Vim 入门：从生存到熟练的 10 个技巧",
+    "tag": "技术",
+    "content": "## 序\n\nVim 的学习曲线很陡，但一旦跨过那堵墙，你会发现再也回不去了。\n\n### 1. 不要用鼠标\n\n这是第一条原则。所有操作都应该在键盘上完成。\n\n### 2. 记住 `:wq` 和 `:q!`\n\n- `:wq` - 保存退出\n- `:q!` - 不保存强制退出\n\n### 3. 移动的几种姿势\n\n| 按键 | 效果 |\n|------|------|\n| `w` | 跳到下一个单词开头 |\n| `b` | 跳到上一个单词开头 |\n| `0` | 行首 |\n| `$` | 行尾 |\n| `gg` | 文件开头 |\n| `G` | 文件末尾 |\n\n### 4. 插入模式的快速切换\n\n`i` 在光标前插入，`a` 在光标后插入，`o` 在下方新行插入。\n\n### 5. 复制粘贴用 `y` 和 `p`\n\n`yy` 复制整行，`p` 粘贴。\n\n### 6. 撤销与重做\n\n`u` 撤销，`Ctrl+r` 重做。\n\n### 7. 搜索\n\n`/pattern` 向下搜索，`?pattern` 向上搜索，`n` 下一个匹配，`N` 上一个匹配。\n\n### 8. 替换\n\n`:%s/old/new/g` 全局替换。\n\n### 9. 多窗口\n\n`:sp` 水平分割，`:vsp` 垂直分割。\n\n### 10. 练习\n\n打开终端，运行 `vimtutor`，15 分钟搞定基础。",
+    "ts": 1722000000000,
+    "date": "2025-07-21"
+  },
+  {
+    "id": "a_17003",
+    "title": "使用 Python 自动化你的日常任务",
+    "tag": "技术",
+    "content": "## 自动化能做什么？\n\nPython 是非常适合写自动化脚本的语言。以下是一些实战案例：\n\n### 文件批量重命名\n\n```python\nimport os\n\npath = './downloads'\nfor i, f in enumerate(os.listdir(path)):\n    ext = os.path.splitext(f)[1]\n    os.rename(\n        os.path.join(path, f),\n        os.path.join(path, f'file_{i}{ext}')\n    )\n```\n\n### 定时发送报告\n\n使用 `schedule` 库：\n\n```python\nimport schedule\nimport time\n\ndef job():\n    print(\"发送日报...\")\n\nschedule.every().day.at(\"09:00\").do(job)\n\nwhile True:\n    schedule.run_pending()\n    time.sleep(1)\n```\n\n### 网页监控\n\n```python\nimport requests\n\nurl = \"https://example.com\"\nold_hash = None\n\nwhile True:\n    r = requests.get(url)\n    new_hash = hash(r.text)\n    if old_hash and new_hash != old_hash:\n        print(\"页面有更新！\")\n    old_hash = new_hash\n    time.sleep(300)\n```\n\n## 推荐工具\n\n- `schedule` - 定时任务\n- `watchdog` - 文件监控\n- `smtplib` - 邮件发送\n- `playwright` - 浏览器自动化\n\n让 Python 帮你干活，多出来的时间用来摸鱼 🐟",
+    "ts": 1723000000000,
+    "date": "2025-07-22"
+  },
+  {
+    "id": "a_17004",
+    "title": "聊聊函数式编程：从 Map 到 Monad",
+    "tag": "技术",
+    "content": "## 什么是函数式编程？\n\n函数式编程是一种编程范式，核心思想是**用纯函数组合来构建程序**。\n\n### 纯函数\n\n```python\n# 纯函数：同样的输入永远得到同样的输出，没有副作用\ndef add(a, b):\n    return a + b\n\n# 不纯函数：依赖外部状态\ncounter = 0\ndef increment():\n    global counter\n    counter += 1\n    return counter\n```\n\n### Map / Filter / Reduce\n\n```python\nnums = [1, 2, 3, 4, 5]\n\n# map: 对每个元素应用函数\ndoubled = list(map(lambda x: x * 2, nums))  # [2, 4, 6, 8, 10]\n\n# filter: 筛选\nevens = list(filter(lambda x: x % 2 == 0, nums))  # [2, 4]\n\n# reduce: 归约\nfrom functools import reduce\ns = reduce(lambda a, b: a + b, nums)  # 15\n```\n\n### 不可变数据\n\n函数式推崇数据不可变：\n\n```python\n# 坏：修改原列表\ndef add_item(lst, item):\n    lst.append(item)\n    return lst\n\n# 好：返回新列表\ndef add_item_pure(lst, item):\n    return [*lst, item]\n```\n\n### Monad 是什么？\n\nMonad 是一种**设计模式**，让你能够在保持纯函数的前提下处理副作用（如 Maybe 类型避免空指针）。\n\n```python\n# Maybe Monad 的简单实现\nclass Maybe:\n    def __init__(self, value):\n        self._value = value\n    \n    def bind(self, func):\n        if self._value is None:\n            return Maybe(None)\n        return func(self._value)\n    \n    def get(self):\n        return self._value\n```\n\n函数式编程会让你的代码更可预测、更容易测试。值得一试。",
+    "ts": 1724000000000,
+    "date": "2025-07-23"
+  },
+  {
+    "id": "a_17005",
+    "title": "我的极简生活主义清单",
+    "tag": "生活",
+    "content": "## 为什么要极简？\n\n拥有的越少，自由的越多。\n\n### 数字极简\n\n- ❌ 取消关注 90% 的公众号\n- ❌ 删掉超过 3 个月没打开的 App\n- ✅ 每天设置 2 小时「无干扰时间」\n- ✅ 手机开启灰度模式\n\n### 物质极简\n\n- 一个季节 5 套衣服足矣\n- 一进一出原则：买一件新的，必须扔掉一件旧的\n- 不囤积：日用品只买一个月的量\n- 书架只留真正会重读的书\n\n### 社交极简\n\n- 不参加无效的饭局\n- 退出所有不说话的群聊\n- 深交 3-5 个真朋友就够了\n\n### 精神极简\n\n- 每天写感恩日记，记录 3 件好事\n- 不刷短视频\n- 冥想 10 分钟\n\n> 少即是多。Less is more.\n\n从今天开始，试试扔掉一件你根本不需要的东西。",
+    "ts": 1725000000000,
+    "date": "2025-07-24"
+  }
+]

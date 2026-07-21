@@ -332,7 +332,7 @@
 
         /* ===== Music Player ===== */
         .player-wrap {
-            position:fixed; bottom:28px; right:28px; z-index:800;
+            position:fixed; bottom:28px; right:28px; z-index:1000; /* 播放器可点，回顶在其上方留空 */
             display:flex; align-items:center;
             transition:transform .4s cubic-bezier(.22,1,.36,1);
         }
@@ -554,7 +554,7 @@
         /*  方案四：回到顶部按钮                                              */
         /* ================================================================ */
         #backToTop {
-            position:fixed; bottom:28px; right:28px; z-index:9000;
+            position:fixed; bottom:calc(28px + 86px + 14px); right:28px; z-index:900;
             width:40px; height:40px; border-radius:50%;
             background:var(--accent-soft); color:var(--accent);
             border:1px solid var(--accent);
@@ -1167,15 +1167,21 @@
         .player-fail.show { display: block; }
 
         #toTop {
-            position: fixed; right: 18px; bottom: 86px; z-index: 40;
+            position: fixed;
+            right: 28px;
+            /* 固定抬到播放器上方，避免挡住播放控件 */
+            bottom: calc(28px + 86px + 14px);
+            z-index: 900;
             width: 36px; height: 36px; border-radius: 50%;
             border: 1px solid var(--border); background: var(--bg-card);
             color: var(--text-secondary); box-shadow: var(--shadow-soft);
-            opacity: 0; pointer-events: none; transition: opacity var(--ease), transform var(--ease);
+            opacity: 0; pointer-events: none;
+            transition: opacity var(--ease), transform var(--ease), bottom .25s ease;
             font-size: .85rem;
         }
         #toTop.show { opacity: 1; pointer-events: auto; }
         #toTop:hover { color: var(--text); transform: translateY(-2px); }
+        body.player-collapsed #toTop { bottom: calc(28px + 52px + 12px); }
 
         .skeleton {
             background: linear-gradient(90deg, var(--bg-soft) 25%, var(--bg-card) 50%, var(--bg-soft) 75%);
@@ -1191,7 +1197,11 @@
             .view { padding: 28px 0 48px; }
             .page { padding: 0 16px; }
             .player-wrap { bottom: 14px; right: 12px; }
-            #toTop { right: 12px; bottom: 72px; }
+            #toTop {
+                right: 12px;
+                bottom: calc(14px + 80px + 12px);
+            }
+            body.player-collapsed #toTop { bottom: calc(14px + 48px + 10px); }
         }
 
         .blog-title { user-select:none; }
@@ -3252,6 +3262,14 @@
         window.delTimelineArticle = delTimelineArticle;
         window.switchView = switchView;
 
+        
+        function syncPlayerCollapsedClass() {
+            try {
+                const wrap = $('playerWrap');
+                document.body.classList.toggle('player-collapsed', !!(wrap && wrap.classList.contains('collapsed')));
+            } catch (e) {}
+        }
+
         function initMusic() {
             audio = new Audio();
             const _vol = parseFloat(localStorage.getItem('blog_music_vol') || '0.6');
@@ -3292,7 +3310,7 @@
             });
 
             $('playerToggle').addEventListener('click', () => {
-                $('playerWrap').classList.toggle('collapsed');
+                $('playerWrap').classList.toggle('collapsed'); syncPlayerCollapsedClass();
                 $('playerToggle').textContent = $('playerWrap').classList.contains('collapsed') ? '>' : '<';
             });
 

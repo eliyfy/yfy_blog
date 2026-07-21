@@ -1,8 +1,9 @@
 {
   "defaultMusic": {
-    "name": "起风了",
-    "artist": "买辣椒也用券",
-    "id": "1330348068",
-    "url": "https://api.injahow.cn/meting/?server=netease&type=url&id=1330348068"
+    "name": "马",
+    "artist": "福禄寿FloruitShow",
+    "id": "1345353903",
+    "url": "https://api.qijieya.cn/meting/?server=netease&type=url&id=1345353903",
+    "pic": "https://api.qijieya.cn/meting/?server=netease&type=pic&id=109951163853896659"
   }
 }

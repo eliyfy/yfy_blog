@@ -1067,6 +1067,67 @@
         openArticle = function(id) { origOA(id); setTimeout(() => { initLightbox(); initCopyCode(); initShareBtn(); }, 300); };
 
         /* ===== Paper scholar UX polish ===== */
+        /* 代码块复制按钮 */
+        .copy-btn {
+            position: absolute; top: 6px; right: 6px;
+            padding: 3px 10px; font-size: .72rem; border: none;
+            border-radius: 6px; background: var(--bg-soft);
+            color: var(--text-dim); cursor: pointer; opacity: 0;
+            transition: opacity .15s ease; z-index: 2;
+        }
+        pre:hover .copy-btn { opacity: 1; }
+        .copy-btn:hover { background: var(--accent); color: var(--bg); }
+        /* Lightbox */
+        .lightbox-overlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,.82); display: flex;
+            align-items: center; justify-content: center;
+            opacity: 0; transition: opacity .2s ease;
+            padding: 20px; cursor: zoom-out;
+        }
+        .lightbox-overlay.show { opacity: 1; }
+        .lightbox-close {
+            position: fixed; top: 20px; right: 24px;
+            font-size: 2rem; color: #fff; cursor: pointer; z-index: 2;
+            line-height: 1; opacity: .7;
+        }
+        .lightbox-close:hover { opacity: 1; }
+        .lightbox-img {
+            max-width: 95%; max-height: 92vh; object-fit: contain;
+            border-radius: 8px; box-shadow: 0 8px 40px rgba(0,0,0,.4); cursor: default;
+        }
+        /* 分享按钮面板 */
+        .share-panel {
+            display: none; position: absolute; top: 100%; right: 0;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius); box-shadow: var(--shadow);
+            padding: 8px; z-index: 100; white-space: nowrap;
+        }
+        .share-panel.show { display: flex; gap: 6px; }
+        .share-panel a {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 6px 12px; border-radius: 6px;
+            font-size: .82rem; color: var(--text); text-decoration: none;
+        }
+        .share-panel a:hover { background: var(--bg-soft); }
+        /* 标签云 */
+        #tagCloud {
+            display: flex; flex-wrap: wrap; gap: 10px 14px;
+            padding: 20px 0; align-items: center; justify-content: center;
+        }
+        .tag-cloud-item {
+            cursor: pointer; color: var(--text-secondary);
+            transition: color .15s ease, transform .15s ease;
+            padding: 2px 0; line-height: 1.4;
+        }
+        .tag-cloud-item:hover { color: var(--accent); transform: translateY(-1px); }
+        .tag-cloud-item sup { font-size: .6rem; margin-left: 2px; opacity: .5; }
+        /* 访客IP显示 */
+        .visitor-loc { font-size: .72rem; color: var(--text-dim); margin-top: 2px; }
+        /* 统计 */
+        .busuanzi-wrap { text-align: center; font-size: .78rem; color: var(--text-dim); margin-top: 40px; padding: 12px 0; border-top: 1px solid var(--border); }
+        .busuanzi-wrap span { margin: 0 4px; }
+
         .art-entry {
             padding: 18px 16px !important;
             border: 1px solid var(--border) !important;
@@ -1616,6 +1677,10 @@
             <div class="tool-group">
                 <h3>站点默认音乐</h3>
                 <div class="hint">登录后可设置全站默认播放歌曲（写入 site-config.json）</div>
+                <div class="editor-field" style="margin-top:24px">
+                    <label>文章标签云</label>
+                    <div id="tagCloud"></div>
+                </div>
                 <div class="tool-row" style="flex-wrap:wrap; gap:8px;">
                     <input type="text" id="siteMusicName" placeholder="歌名" style="flex:1; min-width:120px;" />
                     <input type="text" id="siteMusicArtist" placeholder="歌手" style="flex:1; min-width:100px;" />
@@ -1647,7 +1712,13 @@
                     <button class="btn btn-sm" id="detailEditBtn" type="button">编辑</button>
                     <button class="btn btn-sm btn-outline" id="shareBtn" type="button" style="font-size:.75rem;">↗ 分享</button>
                     <button class="btn btn-sm btn-outline" id="detailDeleteBtn" type="button">删除</button>
-                </span>
+                
+                    <button class="btn btn-sm btn-outline" id="shareBtn" type="button" style="font-size:.82rem">分享</button>
+                    <div class="share-panel" id="sharePanel">
+                        <a href="#" onclick="navigator.clipboard.writeText(window.location.href);return false">📋 复制链接</a>
+                        <a href="#" onclick="window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(document.title)+'&url='+encodeURIComponent(window.location.href));return false">𝕏</a>
+                    </div>
+            </span>
             </div>
             <article class="standalone-article">
                 <div class="article-hero no-cover" id="articleHero">
@@ -2915,7 +2986,7 @@
 
             $('detailTitle').textContent = a.title;
             const wordCount = (a.content || '').replace(/<[^>]*>/g, '').length;
-            const readMin = Math.max(1, Math.ceil(wordCount / 400));
+            const readMin = Math.max(1, Math.ceil(wordCount / 400)); const wc = wordCount;
             $('detailMeta').textContent = (a.tag ? a.tag + '  ·  ' : '') + '发表于 ' + (a.date || '') + '  ·  阅读时长: ' + readMin + ' 分钟';
 
             const hero = $('articleHero');
@@ -3955,7 +4026,188 @@
             updateHlTheme();
         }
 
-        function initOptimizations() {
+        
+
+
+        // 代码块复制按钮
+        function initCopyCode() {
+            document.querySelectorAll('pre code').forEach(block => {
+                const pre = block.parentElement;
+                if (pre.querySelector('.copy-btn')) return;
+                const btn = document.createElement('button');
+                btn.className = 'copy-btn';
+                btn.textContent = '复制';
+                pre.style.position = 'relative';
+                pre.appendChild(btn);
+                btn.addEventListener('click', async () => {
+                    try {
+                        await navigator.clipboard.writeText(block.textContent);
+                        btn.textContent = '✓ 已复制';
+                        setTimeout(() => { btn.textContent = '复制'; }, 2000);
+                    } catch { btn.textContent = '失败'; }
+                });
+            });
+        }
+        // 监听动态内容
+        const copyObserver = new MutationObserver(() => initCopyCode());
+        copyObserver.observe(document.body, { childList: true, subtree: true });
+
+
+        // 图片Lightbox
+        function initLightbox() {
+            document.querySelectorAll('.art-content img, .gh-editor-preview img').forEach(img => {
+                if (img.closest('.cover-img-box') || img.dataset.lbox) return;
+                img.dataset.lbox = '1';
+                img.style.cursor = 'zoom-in';
+                img.addEventListener('click', () => {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'lightbox-overlay';
+                    overlay.innerHTML = '<span class="lightbox-close">&times;</span><img src="' + htm.encode(img.src) + '" class="lightbox-img" onclick="event.stopPropagation()">';
+                    overlay.addEventListener('click', () => overlay.remove());
+                    document.body.appendChild(overlay);
+                    requestAnimationFrame(() => overlay.classList.add('show'));
+                });
+            });
+        }
+        const lboxObserver = new MutationObserver(() => initLightbox());
+        lboxObserver.observe(document.body, { childList: true, subtree: true });
+
+
+        // 分享
+        function initShare() {
+            const btn = document.getElementById('shareBtn');
+            if (!btn) return;
+            btn.addEventListener('click', () => {
+                const url = window.location.href;
+                const title = document.title;
+                if (navigator.share) {
+                    navigator.share({ title, url }).catch(() => {});
+                } else {
+                    const panel = document.getElementById('sharePanel');
+                    if (panel) {
+                        panel.classList.toggle('show');
+                        return;
+                    }
+                    // fallback: copy link
+                    navigator.clipboard.writeText(url).then(() => toast('链接已复制'));
+                }
+            });
+        }
+
+
+        // 在 detailMeta 追加字数
+        function updateWordCount() {
+            const meta = document.getElementById('detailMeta');
+            if (!meta || meta.dataset.wc) return;
+            const a = articles.find(a => a.id === currentArticleId);
+            if (!a) return;
+            const wc = (a.content || '').replace(/<[^>]*>/g, '').length;
+            meta.textContent += ' · ' + wc + ' 字';
+            meta.dataset.wc = '1';
+        }
+
+
+        // 不蒜子访问统计
+        function initBusuanzi() {
+            const script = document.createElement('script');
+            script.src = '//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js';
+            script.async = true;
+            script.setAttribute('data-no-inject', 'true');
+            document.head.appendChild(script);
+        }
+
+
+        // 自动保存草稿
+        let autoSaveTimer = null;
+        function initAutoSave() {
+            const title = document.getElementById('editTitle');
+            const content = document.getElementById('editContent');
+            const tag = document.getElementById('editTag');
+            if (!title || !content) return;
+            const save = () => {
+                const d = { title: title.value, content: content.value, tag: tag ? tag.value : '', ts: Date.now() };
+                localStorage.setItem('blog_draft', JSON.stringify(d));
+            };
+            ['input', 'change'].forEach(ev => {
+                title.addEventListener(ev, save);
+                if (content) content.addEventListener(ev, save);
+                if (tag) tag.addEventListener(ev, save);
+            });
+            // 恢复
+            try {
+                const d = JSON.parse(localStorage.getItem('blog_draft'));
+                if (d && d.ts && Date.now() - d.ts < 86400000) {
+                    if (!title.value && d.title) title.value = d.title;
+                    if (content && !content.value && d.content) content.value = d.content;
+                    if (tag && !tag.value && d.tag) tag.value = d.tag;
+                }
+            } catch(e) {}
+        }
+
+
+        // 访客IP地理定位
+        let visitorLocation = null;
+        async function getVisitorLocation() {
+            if (visitorLocation) return visitorLocation;
+            try {
+                const ctrl = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), 5000);
+                const res = await fetch('https://ip-api.com/json/?lang=zh-CN', { signal: ctrl.signal });
+                clearTimeout(timer);
+                if (!res.ok) return null;
+                const data = await res.json();
+                if (data.status === 'success') {
+                    visitorLocation = data.city + (data.regionName && data.regionName !== data.city ? ', ' + data.regionName : '') + (data.country ? ' · ' + data.country : '');
+                    return visitorLocation;
+                }
+            } catch(e) {}
+            return null;
+        }
+        // 修改留言提交，附上位置
+        const origSubmitComment = window.submitComment;
+        // 在 submitMessage 和 submitComment 里调用 getVisitorLocation
+
+
+        // 标签云
+        function renderTagCloud() {
+            const container = document.getElementById('tagCloud');
+            if (!container || !articles.length) return;
+            const tags = {};
+            articles.forEach(a => {
+                const t = (a.tag || '').split(/[,，]/).map(s => s.trim()).filter(Boolean);
+                t.forEach(tag => { tags[tag] = (tags[tag] || 0) + 1; });
+            });
+            const entries = Object.entries(tags).sort((a,b) => b[1] - a[1]);
+            if (!entries.length) { container.innerHTML = '<div class="empty-sub">暂无标签</div>'; return; }
+            const max = entries[0][1];
+            container.innerHTML = entries.map(([tag, count]) => {
+                const size = 0.75 + (count / max) * 0.55;
+                return '<span class="tag-cloud-item" style="font-size:' + size.toFixed(2) + 'rem" onclick="switchView(\'articles\');setTimeout(()=>{const inp=document.getElementById(\'articleSearchInput\');if(inp){inp.value=\'' + htm.escape(tag) + '\';inp.dispatchEvent(new Event(\'input\'))}},100)">' + htm.escape(tag) + '<sup>' + count + '</sup></span>';
+            }).join(' ');
+        }
+
+
+        // 性能优化：延迟非关键资源
+        function initPerf() {
+            // 延迟加载highlight.js
+            const hl = document.querySelector('link[href*="highlight"]');
+            if (hl) hl.setAttribute('media', 'print');
+            // 标记已加载
+            document.documentElement.classList.add('loaded');
+            // 延迟广告/统计等
+            setTimeout(() => {
+                const hl = document.querySelector('link[href*="highlight"]');
+                if (hl) hl.setAttribute('media', 'all');
+            }, 3000);
+        }
+
+function initOptimizations() {
+            initAutoSave();
+            initCopyCode();
+            initLightbox();
+            initShare();
+            initBusuanzi();
+            initPerf();
             initStickyHeader();
             initBackToTop();
             initScrollReveal();
@@ -4017,7 +4269,7 @@
                 const charCount = text.length;
                 const wordCount = text.trim() === '' ? 0 : text.replace(/<[^>]*>/g, '').length;
                 const lines = text.split('\n').length;
-                const readMin = Math.max(1, Math.ceil(wordCount / 400));
+                const readMin = Math.max(1, Math.ceil(wordCount / 400)); const wc = wordCount;
                 wordCountSpan.textContent = charCount + ' chars | ' + lines + ' lines';
                 readTimeSpan.textContent = 'Est. Read Time: ~' + readMin + ' min';
             }

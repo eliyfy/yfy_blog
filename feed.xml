@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>芸芣苡</title>
+  <link href="https://eliyfy.github.io/yfy_blog/"/>
+  <link rel="self" href="https://eliyfy.github.io/yfy_blog/feed.xml"/>
+  <updated>2026-07-21T15:07:11Z</updated>
+  <author><name>芸芣苡</name></author>
+  <id>tag:eliyfy.github.io,2025:blog</id>
+  <entry>
+    <title>你好，世界 —— 新博客启航</title>
+    <link href="https://eliyfy.github.io/yfy_blog/#article/a_17001"/>
+    <id>tag:eliyfy.github.io,2024-07-14:a_17001</id>
+    <published>Sun, 14 Jul 2024 23:33:20 +0000</published>
+    <updated>Sun, 14 Jul 2024 23:33:20 +0000</updated>
+    <summary type="text">## 为什么写博客
+
+一直以来都想有个自己的地方写点东西。技术笔记也好，生活感悟也好，哪怕只是几行随手的思考。
+
+> 「写作是为了让人理解，而不仅仅是表达。」
+
+## 关于这个博客
+
+这是一个 **纯前端静态博客**，托管在 GitHub Pages 上。
+
+- 📝 基于 Markdown 写作
+- 🌙 支持深色/浅色主题
+- ⏱ 时间线视图
+- 📖 独立文章页面
+
+以后会陆续更新技术文章和生活记</summary>
+  </entry>
+</feed>

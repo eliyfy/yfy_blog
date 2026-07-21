@@ -1194,7 +1194,119 @@
         }
 
         .blog-title { user-select:none; }
-        </style>
+        
+        /* 文章卡片：封面占上半部分 */
+        .home-recent-item, .art-entry {
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden;
+            padding: 0 !important;
+        }
+        .home-recent-item .cover-thumb-wrap,
+        .art-entry .cover-thumb-wrap {
+            width: 100% !important;
+            height: 0 !important;
+            padding-bottom: 52% !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+            border: none !important;
+            border-bottom: 1px solid var(--border) !important;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .home-recent-item .cover-thumb-wrap .cover-thumb,
+        .art-entry .cover-thumb-wrap .cover-thumb {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .home-recent-item .card-body,
+        .art-entry .card-body {
+            padding: 14px 16px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .home-recent-item .row { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+        .home-recent-item .title, .art-entry .art-title {
+            font-family: var(--font-serif);
+            font-size: 1.05rem;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+        /* 详情页：标题区模糊封面背景（参考图） */
+        .article-hero {
+            position: relative;
+            border-radius: var(--radius);
+            overflow: hidden;
+            margin: 8px 0 28px;
+            min-height: 220px;
+            background: var(--bg-soft);
+            border: 1px solid var(--border);
+        }
+        .article-hero-bg {
+            position: absolute;
+            inset: -20px;
+            background-size: cover;
+            background-position: center;
+            filter: blur(18px) saturate(1.05);
+            transform: scale(1.08);
+            opacity: .55;
+        }
+        .article-hero-bg::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(20,16,12,.35) 0%, rgba(20,16,12,.55) 55%, rgba(20,16,12,.72) 100%);
+        }
+        html.dark .article-hero-bg::after {
+            background: linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,.6) 60%, rgba(0,0,0,.78) 100%);
+        }
+        .article-hero-fg {
+            position: relative;
+            z-index: 1;
+            padding: 36px 22px 28px;
+            color: #f8f4ee;
+            text-align: left;
+        }
+        .article-hero-fg h1 {
+            font-family: var(--font-serif);
+            font-size: clamp(1.45rem, 5vw, 1.95rem);
+            font-weight: 700;
+            line-height: 1.35;
+            margin: 0 0 14px;
+            color: #fffef9;
+            text-shadow: 0 2px 18px rgba(0,0,0,.25);
+        }
+        .article-hero-fg .hero-meta {
+            font-size: .82rem;
+            color: rgba(255,255,255,.82);
+            line-height: 1.7;
+            letter-spacing: .02em;
+        }
+        .article-hero.no-cover {
+            min-height: auto;
+            background: transparent;
+            border: none;
+        }
+        .article-hero.no-cover .article-hero-bg { display: none; }
+        .article-hero.no-cover .article-hero-fg {
+            padding: 8px 0 12px;
+            color: var(--text);
+        }
+        .article-hero.no-cover .article-hero-fg h1 {
+            color: var(--text);
+            text-shadow: none;
+            font-size: 1.75rem;
+        }
+        .article-hero.no-cover .hero-meta { color: var(--text-dim); }
+        .detail-cover-legacy { display: none !important; }
+
+    </style>
 </head>
 <body>
     <div id="readingProgress"></div>
@@ -1316,9 +1428,16 @@
                 </span>
             </div>
             <article class="standalone-article">
-                <div class="detail-cover-wrap" id="detailCoverWrap" style="display:none"><img id="detailCoverImg" alt="封面" loading="lazy" decoding="async" /></div>
-            <h1 id="detailTitle" style="font-family:var(--font-serif); font-size: 2rem; font-weight:700; margin-bottom: 12px; color:var(--text); line-height: 1.3;"></h1>
-                <div class="art-meta" id="detailMeta" style="font-size: .85rem; color: var(--text-dim); margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid var(--border);"></div>
+                <div class="article-hero no-cover" id="articleHero">
+                    <div class="article-hero-bg" id="articleHeroBg"></div>
+                    <div class="article-hero-fg">
+                        <h1 id="detailTitle"></h1>
+                        <div class="hero-meta" id="detailMeta"></div>
+                    </div>
+                </div>
+                <div class="detail-cover-wrap detail-cover-legacy" id="detailCoverWrap" style="display:none">
+                    <img id="detailCoverImg" class="lazy-img" alt="封面" />
+                </div>
                 <div class="art-content" id="detailContent" style="font-size: 1.02rem; line-height: 1.95; color: var(--text);"></div>
             </article>
             <!-- ===== 留言区 ===== -->
@@ -1661,24 +1780,45 @@
         //  INIT
         // ================================================================
         document.addEventListener('DOMContentLoaded', async () => {
-            await initDB();
-            await loadArticles();
-            loadState();
-            initTheme();
-            initViews();
-            initLogin();
-            initArticles();
-            initGitHub();
-            initMusic();
-            initQuote();
-            initOptimizations();
-            initMarkdownEditor();
-            initGuestbook();
-            renderHomeRecent();
-            renderArticleList();
-            renderTimelineList();
-            handleRouteHash();
+            try {
+                await Promise.race([
+                    initDB(),
+                    new Promise((r) => setTimeout(r, 2000))
+                ]);
+            } catch (e) { console.warn('initDB', e); }
+            try {
+                await Promise.race([
+                    loadArticles(),
+                    new Promise((r) => setTimeout(r, 10000))
+                ]);
+            } catch (e) {
+                console.warn('loadArticles', e);
+                try {
+                    const res = await fetch('./articles.json?t=' + Date.now());
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (Array.isArray(data)) articles = data;
+                    }
+                } catch (e2) {}
+            }
+            try { loadState(); } catch (e) {}
+            try { initTheme(); } catch (e) {}
+            try { initViews(); } catch (e) {}
+            try { initLogin(); } catch (e) {}
+            try { initArticles(); } catch (e) {}
+            try { initGitHub(); } catch (e) {}
+            try { initMusic(); } catch (e) {}
+            try { initQuote(); } catch (e) {}
+            try { initOptimizations(); } catch (e) {}
+            try { initMarkdownEditor(); } catch (e) {}
+            try { initGuestbook(); } catch (e) {}
+            try { if (typeof initCoverUpload === 'function') initCoverUpload(); } catch (e) {}
+            try { renderHomeRecent(); } catch (e) { console.warn(e); }
+            try { renderArticleList(); } catch (e) { console.warn(e); }
+            try { renderTimelineList(); } catch (e) {}
+            try { handleRouteHash(); } catch (e) {}
             window.addEventListener('hashchange', handleRouteHash);
+            console.log('芸芣苡 · 博客 ready', articles.length);
         });
 
         function handleRouteHash() {
@@ -1732,54 +1872,91 @@
             });
         }
         async function loadArticles() {
-            // Try to sync with GitHub articles.json first (Cross-device cloud DB)
-            const ghToken = localStorage.getItem('blog_gh_token');
             const owner = 'eliyfy';
             const repo = 'yfy_blog';
-            
-            try {
-                // Fetch public json from rawgithub or github pages to ensure any user sees it
-                // We append a timestamp to prevent caching
-                const res = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/main/articles.json?t=${Date.now()}`);
-                if (res.ok) {
-                    const cloudArticles = await res.json();
-                    if (Array.isArray(cloudArticles)) {
-                        // Sync cloud to IndexedDB
-                        // Clear current store first
-                        const tx = db.transaction('articles', 'readwrite');
-                        const store = tx.objectStore('articles');
-                        await new Promise((resolve) => {
-                            const req = store.clear();
-                            req.onsuccess = resolve;
-                        });
-                        
-                        // Put all cloud articles into IndexedDB
-                        for (const a of cloudArticles) {
-                            await dbPut(a);
-                        }
-                        console.log("✓ Synchronized articles from GitHub Cloud!");
+            const urls = [
+                `./articles.json?t=${Date.now()}`,
+                `articles.json?t=${Date.now()}`,
+                `https://eliyfy.github.io/yfy_blog/articles.json?t=${Date.now()}`,
+                `https://raw.githubusercontent.com/${owner}/${repo}/main/articles.json?t=${Date.now()}`
+            ];
+
+            async function fetchArticlesJson() {
+                for (const url of urls) {
+                    try {
+                        const ctrl = new AbortController();
+                        const timer = setTimeout(() => ctrl.abort(), 8000);
+                        const res = await fetch(url, { signal: ctrl.signal, cache: 'no-store' });
+                        clearTimeout(timer);
+                        if (!res.ok) continue;
+                        const data = await res.json();
+                        if (Array.isArray(data)) return data;
+                    } catch (e) {
+                        console.warn('articles fetch fail', url, e && e.message);
                     }
                 }
-            } catch(e) {
-                console.log("Cloud sync failed or offline, loading from local IndexedDB:", e.message);
+                return null;
             }
 
-            let arr = await dbAll();
-            // 仅在本地为空时迁移旧 localStorage，避免把已删除文章重新写回
-            const old = localStorage.getItem('blog_articles');
-            if (old && (!arr || !arr.length)) {
-                try {
-                    const oldArr = JSON.parse(old);
-                    for (const a of oldArr) {
-                        if (!a.id) a.id = 'a_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-                        await dbPut(a);
+            function idbClearArticles() {
+                return new Promise((resolve) => {
+                    try {
+                        if (!db) return resolve(false);
+                        const tx = db.transaction('articles', 'readwrite');
+                        const store = tx.objectStore('articles');
+                        const req = store.clear();
+                        let done = false;
+                        const finish = (v) => { if (!done) { done = true; resolve(v); } };
+                        req.onsuccess = () => finish(true);
+                        req.onerror = () => finish(false);
+                        tx.oncomplete = () => finish(true);
+                        tx.onerror = () => finish(false);
+                        setTimeout(() => finish(false), 2500);
+                    } catch (e) {
+                        resolve(false);
                     }
-                    arr = await dbAll();
-                } catch(e) {}
+                });
             }
-            // 旧缓存一律清理，防止复活
-            try { localStorage.removeItem('blog_articles'); } catch(e) {}
-            articles = (arr || []).sort((a,b) => a.ts - b.ts);
+
+            // 1) 优先拉云端/相对路径 JSON（不依赖 IDB）
+            const cloudArticles = await fetchArticlesJson();
+            if (cloudArticles && cloudArticles.length) {
+                articles = cloudArticles.slice().sort((a, b) => (a.ts || 0) - (b.ts || 0));
+                // 后台尽力同步到 IDB，失败不影响展示
+                try {
+                    if (db) {
+                        await idbClearArticles();
+                        for (const a of cloudArticles) {
+                            try { await dbPut(a); } catch (e) {}
+                        }
+                        console.log('✓ articles synced', articles.length);
+                    }
+                } catch (e) {
+                    console.warn('IDB sync skip', e && e.message);
+                }
+                return;
+            }
+
+            // 2) 回退本地 IDB
+            try {
+                let arr = await dbAll();
+                const old = localStorage.getItem('blog_articles');
+                if (old && (!arr || !arr.length)) {
+                    try {
+                        const oldArr = JSON.parse(old);
+                        for (const a of oldArr) {
+                            if (!a.id) a.id = 'a_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+                            await dbPut(a);
+                        }
+                        arr = await dbAll();
+                    } catch (e) {}
+                }
+                try { localStorage.removeItem('blog_articles'); } catch (e) {}
+                articles = (arr || []).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+            } catch (e) {
+                console.warn('local articles fail', e && e.message);
+                articles = [];
+            }
         }
 
         // ====== 时间线视图 ======
@@ -2189,14 +2366,14 @@
                         '</div>';
                 }
                 const cover = getArticleCover(a);
-                listHtml += '<article class="art-entry" style="padding-bottom:20px; border-bottom:1px solid var(--border); transition:all .2s;">' +
-                    coverImgHtml(cover, '', 'openArticle(' + realIdx + ')') +
-                    '<div style="font-size:.78rem; color:var(--text-dim); font-family:var(--font-mono); margin-bottom:6px;">' + (a.date || '') + (a.tag ? ' · ' + escHtml(a.tag) : '') + ' · ' + readMin + ' min read</div>' +
-                    '<h2 style="font-size:1.25rem; font-weight:600; color:var(--text); margin-bottom:8px; cursor:pointer;" onclick="openArticle(' + realIdx + ')">' + escHtml(a.title) + '</h2>' +
-                    '<div style="font-size:.9rem; color:var(--text-secondary); line-height:1.6; margin-bottom:12px; cursor:pointer;" onclick="openArticle(' + realIdx + ')">' + excerptText + '</div>' +
-                    '<div><a href="javascript:void(0)" onclick="openArticle(' + realIdx + ')" style="font-size:.85rem; color:var(--accent); text-decoration:none; font-weight:500;">阅读全文 →</a></div>' +
+                listHtml += '<article class="art-entry clickable" onclick="openArticle(\\'' + (a.id || '') + '\\')">' +
+                    coverImgHtml(cover, '', '') +
+                    '<div class="card-body">' +
+                    '<div class="art-title">' + escHtml(a.title) + '</div>' +
+                    '<div class="art-meta">' + escHtml(a.date || '') + (a.tag ? ' · ' + escHtml(a.tag) : '') + ' · ' + readMin + ' min read</div>' +
+                    '<div class="art-excerpt">' + excerptText + '</div>' +
                     adminHtml +
-                    '</article>';
+                    '</div></article>';
             });
             listHtml += '</div>';
 
@@ -2231,15 +2408,66 @@
                 .trim();
         }
         
+        
+        function initCoverUpload() {
+            const file = $('editCoverFile');
+            const url = $('editCover');
+            const prev = $('editCoverPreview');
+            const clearBtn = $('editCoverClear');
+            if (file) {
+                file.addEventListener('change', () => {
+                    const f = file.files && file.files[0];
+                    if (!f) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const max = 1280;
+                            let w = img.width, h = img.height;
+                            if (w > max || h > max) {
+                                const r = Math.min(max / w, max / h);
+                                w = Math.round(w * r); h = Math.round(h * r);
+                            }
+                            const c = document.createElement('canvas');
+                            c.width = w; c.height = h;
+                            c.getContext('2d').drawImage(img, 0, 0, w, h);
+                            const data = c.toDataURL('image/jpeg', 0.82);
+                            if (url) url.value = data;
+                            if (prev) { prev.src = data; prev.style.display = 'block'; }
+                        };
+                        img.src = reader.result;
+                    };
+                    reader.readAsDataURL(f);
+                });
+            }
+            if (url && prev) {
+                url.addEventListener('input', () => {
+                    const v = url.value.trim();
+                    if (v) { prev.src = v; prev.style.display = 'block'; }
+                    else { prev.removeAttribute('src'); prev.style.display = 'none'; }
+                });
+            }
+            if (clearBtn) {
+                clearBtn.addEventListener('click', () => {
+                    if (url) url.value = '';
+                    if (file) file.value = '';
+                    if (prev) { prev.removeAttribute('src'); prev.style.display = 'none'; }
+                });
+            }
+        }
+
         function getArticleCover(a) {
             if (!a) return '';
             return String(a.cover || a.coverUrl || '').trim();
         }
         function coverImgHtml(src, cls, onclick) {
-            if (!src) return '';
+            if (!src) {
+                return '<div class="cover-thumb-wrap skeleton" style="background:linear-gradient(135deg,var(--bg-soft),var(--border))"></div>';
+            }
             const oc = onclick ? (' onclick="' + onclick + '"') : '';
+            // 直接带 src + loading=lazy，避免仅 data-src 未 hydrate 时空白
             return '<div class="cover-thumb-wrap skeleton"' + oc + '>' +
-                '<img class="cover-thumb lazy-img ' + (cls || '') + '" data-src="' + escHtml(src) + '" alt="封面" loading="lazy" decoding="async" />' +
+                '<img class="cover-thumb lazy-img ' + (cls || '') + '" src="' + escHtml(src) + '" data-src="' + escHtml(src) + '" alt="封面" loading="lazy" decoding="async" onload="this.classList.add(\'is-loaded\');this.parentElement&&this.parentElement.classList.remove(\'skeleton\')" onerror="this.style.opacity=0" />' +
                 '</div>';
         }
         function hydrateLazyImages(root) {
@@ -2410,22 +2638,24 @@
             }
             const recent = articles.slice().sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0, 5);
             let html = '';
-            recent.forEach((a, i) => {
+            recent.forEach((a) => {
                 const id = a.id || '';
                 const tag = a.tag ? '<span class="tag-pill">' + escHtml(a.tag) + '</span>' : '';
                 const mins = readingMinutes(a.content);
                 const cover = getArticleCover(a);
                 html += '<div class="home-recent-item clickable" onclick="openArticle(\'' + id + '\')">' +
                     coverImgHtml(cover, '', '') +
+                    '<div class="card-body">' +
                     '<div class="row"><span class="title">' + escHtml(a.title) + '</span><span class="date">' + escHtml(a.date || '') + '</span></div>' +
                     '<div class="meta">' + tag + '<span>' + mins + ' read</span></div>' +
                     '<div class="excerpt">' + escHtml(extractExcerpt(a.content, 90)) + '</div>' +
-                    '</div>';
+                    '</div></div>';
             });
             list.innerHTML = html;
+            try { hydrateLazyImages(list); } catch (e) {}
         }
 
-                function openArticle(idxOrId) {
+        function openArticle(idxOrId) {
             let a = null;
             if (typeof idxOrId === 'number') {
                 a = articles[idxOrId];
@@ -2437,25 +2667,26 @@
             $('detailTitle').textContent = a.title;
             const wordCount = (a.content || '').replace(/<[^>]*>/g, '').length;
             const readMin = Math.max(1, Math.ceil(wordCount / 400));
-            $('detailMeta').textContent = (a.tag ? a.tag + ' · ' : '') + (a.date || '') + ' · ' + readMin + ' min read';
+            $('detailMeta').textContent = (a.tag ? a.tag + '  ·  ' : '') + '发表于 ' + (a.date || '') + '  ·  阅读时长: ' + readMin + ' 分钟';
 
+            const hero = $('articleHero');
+            const heroBg = $('articleHeroBg');
             const dWrap = $('detailCoverWrap');
             const dImg = $('detailCoverImg');
             const csrc = getArticleCover(a);
-            if (dWrap && dImg) {
+            if (hero) {
                 if (csrc) {
-                    dWrap.style.display = 'block';
-                    dWrap.classList.add('skeleton');
-                    dImg.classList.remove('is-loaded');
-                    dImg.dataset.hydrated = '';
-                    dImg.setAttribute('data-src', csrc);
-                    dImg.removeAttribute('src');
-                    hydrateLazyImages(dWrap);
+                    hero.classList.remove('no-cover');
+                    if (heroBg) {
+                        heroBg.style.backgroundImage = 'url("' + String(csrc).replace(/"/g, '%22') + '")';
+                    }
                 } else {
-                    dWrap.style.display = 'none';
-                    dImg.removeAttribute('src');
-                    dImg.removeAttribute('data-src');
+                    hero.classList.add('no-cover');
+                    if (heroBg) heroBg.style.backgroundImage = '';
                 }
+            }
+            if (dWrap && dImg) {
+                dWrap.style.display = 'none';
             }
 
             let rawHtml = '';

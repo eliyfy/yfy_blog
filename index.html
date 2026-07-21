@@ -4,18 +4,279 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>芸芣苡</title>
-    <meta name="description" content="芸芣苡 · 纸笺文人风个人博客。写一点技术、生活与随笔。" />
-    <meta name="theme-color" content="#f6f2ec" />
-    <meta property="og:title" content="芸芣苡" />
-    <meta property="og:description" content="纸笺文人风个人博客。写一点技术、生活与随笔。" />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://eliyfy.github.io/yfy_blog/" />
-    <meta property="og:image" content="https://eliyfy.github.io/yfy_blog/og-cover.svg" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="favicon.svg" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js" defer></script>
-    <link rel="alternate" type="application/atom+xml" title="芸芣苡" href="feed.xml" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js">
+
+        function updateWordCount(text) {
+            const el = document.getElementById('wordCountNum');
+            if (!el) return;
+            const count = text.replace(/\s+/g, '').length;
+            el.textContent = count;
+            document.getElementById('detailWordCount').style.display = '';
+        }
+        // Hook into existing renderArticleDetail
+        const _origRender = window.renderArticleDetail;
+        if (_origRender) {
+            window.renderArticleDetail = function(article) {
+                _origRender(article);
+                if (article && article.content) updateWordCount(article.content);
+            };
+        }
+
+
+
+        function initCopyCode() {
+            document.querySelectorAll('.code-wrap').forEach(w => {
+                if (w.querySelector('.copy-code-btn')) return;
+                const btn = document.createElement('button');
+                btn.className = 'copy-code-btn'; btn.textContent = '复制';
+                btn.onclick = async () => {
+                    const code = w.querySelector('code');
+                    if (!code) return;
+                    try {
+                        await navigator.clipboard.writeText(code.textContent);
+                        btn.textContent = '✓ 已复制'; btn.classList.add('copied');
+                        setTimeout(() => { btn.textContent = '复制'; btn.classList.remove('copied'); }, 2000);
+                    } catch { btn.textContent = '失败'; setTimeout(() => btn.textContent = '复制', 2000); }
+                };
+                w.appendChild(btn);
+            });
+        }
+        document.addEventListener('DOMContentLoaded', initCopyCode);
+        // Also re-run after article content loaded
+        const _obs = new MutationObserver(() => initCopyCode());
+        _obs.observe(document.getElementById('detailContent') || document.body, { childList: true, subtree: true });
+
+
+
+        let lightboxWrap = null;
+        function initLightbox() {
+            document.querySelectorAll('#detailContent img').forEach(img => {
+                if (img.closest('.lightbox-wrap')) return;
+                const wrap = document.createElement('span');
+                wrap.className = 'lightbox-wrap';
+                img.parentNode.insertBefore(wrap, img);
+                wrap.appendChild(img);
+                img.style.cursor = 'zoom-in';
+                img.onclick = (e) => { e.stopPropagation(); openLightbox(img.src); };
+            });
+        }
+        function openLightbox(src) {
+            const overlay = document.getElementById('lightboxOverlay');
+            const img = document.getElementById('lightboxImg');
+            if (!overlay || !img) return;
+            img.src = src; overlay.classList.add('show');
+        }
+        function closeLightbox() {
+            document.getElementById('lightboxOverlay')?.classList.remove('show');
+        }
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeLightbox();
+        });
+        document.addEventListener('DOMContentLoaded', () => {
+            initLightbox();
+            new MutationObserver(() => initLightbox()).observe(document.getElementById('detailContent') || document.body, { childList: true, subtree: true });
+        });
+
+
+
+        function shareArticle() {
+            const title = document.querySelector('#detailTitle')?.textContent || document.title;
+            const url = window.location.href;
+            if (navigator.share) {
+                navigator.share({ title, url }).catch(() => {});
+            } else {
+                navigator.clipboard.writeText(url).then(() => {
+                    const btn = document.querySelector('.share-btn');
+                    if (btn) { const t = btn.textContent; btn.textContent = '✓ 已复制链接'; setTimeout(() => btn.textContent = t, 2000); }
+                });
+            }
+        }
+
+
+
+        function initKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+                if (e.key === 't' || e.key === 'T') { window.scrollTo({ top: 0, behavior: 'smooth' }); e.preventDefault(); }
+                if (e.key === '?') { toggleShortcutsPanel(); e.preventDefault(); }
+                if (e.key === 'Escape') { closeShortcutsPanel(); closeLightbox(); }
+                if (e.key === 'k' || e.key === 'ArrowLeft') {
+                    const prev = document.querySelector('.prev-article a');
+                    if (prev) { prev.click(); e.preventDefault(); }
+                }
+                if (e.key === 'j' || e.key === 'ArrowRight') {
+                    const next = document.querySelector('.next-article a');
+                    if (next) { next.click(); e.preventDefault(); }
+                }
+            });
+        }
+        function toggleShortcutsPanel() {
+            const p = document.getElementById('shortcutsPanel');
+            const o = document.getElementById('shortcutsOverlay');
+            if (!p) return;
+            const show = !p.classList.contains('show');
+            p.classList.toggle('show', show);
+            if (o) o.classList.toggle('show', show);
+        }
+        function closeShortcutsPanel() {
+            document.getElementById('shortcutsPanel')?.classList.remove('show');
+            document.getElementById('shortcutsOverlay')?.classList.remove('show');
+        }
+        document.addEventListener('DOMContentLoaded', initKeyboardShortcuts);
+
+
+
+        function initAutoSave() {
+            const SAVE_KEY = 'blog_draft_auto';
+            let asTimer = null;
+            function saveDraft() {
+                const editor = document.querySelector('#editorWrap textarea, #editorWrap [contenteditable]');
+                if (!editor) return;
+                const content = typeof editor.value !== 'undefined' ? editor.value : editor.innerHTML;
+                if (content.trim().length > 10) {
+                    try { localStorage.setItem(SAVE_KEY, JSON.stringify({ content, title: document.querySelector('#editorTitle')?.value || '', ts: Date.now() })); } catch {}
+                }
+            }
+            function restoreDraft() {
+                try {
+                    const raw = localStorage.getItem(SAVE_KEY);
+                    if (!raw) return;
+                    const draft = JSON.parse(raw);
+                    if (Date.now() - draft.ts > 86400000) { localStorage.removeItem(SAVE_KEY); return; } // >24h discard
+                    const titleEl = document.querySelector('#editorTitle');
+                    const editor = document.querySelector('#editorWrap textarea, #editorWrap [contenteditable]');
+                    if (titleEl && draft.title) titleEl.value = draft.title;
+                    if (editor && draft.content) {
+                        if (typeof editor.value !== 'undefined') editor.value = draft.content;
+                        else editor.innerHTML = draft.content;
+                    }
+                } catch {}
+            }
+            // Watch editor mount
+            const obs = new MutationObserver(() => {
+                const editor = document.querySelector('#editorWrap textarea, #editorWrap [contenteditable]');
+                if (editor && !asTimer) {
+                    asTimer = setInterval(saveDraft, 30000);
+                    restoreDraft();
+                }
+            });
+            obs.observe(document.body, { childList: true, subtree: true });
+            // Try immediately
+            setTimeout(() => {
+                const editor = document.querySelector('#editorWrap textarea, #editorWrap [contenteditable]');
+                if (editor) { asTimer = setInterval(saveDraft, 30000); restoreDraft(); }
+            }, 2000);
+        }
+        document.addEventListener('DOMContentLoaded', initAutoSave);
+
+
+
+        let visitorIP = '', visitorCity = '';
+        function getVisitorIP() {
+            fetch('https://ip-api.com/json/?fields=status,query,city,region,country,isp', { timeout: 5000 })
+                .then(r => r.json())
+                .then(d => {
+                    if (d.status === 'success') {
+                        visitorIP = d.query;
+                        visitorCity = [d.city, d.region].filter(Boolean).join(', ') || d.country;
+                        if (d.isp) visitorCity += ' · ' + d.isp.split(' ')[0];
+                    }
+                }).catch(() => {});
+        }
+        // Patch the existing comment submit
+        document.addEventListener('DOMContentLoaded', () => {
+            getVisitorIP();
+            // Hook into comment form submit
+            setTimeout(() => {
+                const form = document.querySelector('#guestbookForm, .comment-form, form[action*="comment"]');
+                if (form) {
+                    form.addEventListener('submit', () => {
+                        const cityInput = form.querySelector('input[name="visitorCity"], input[name="city"]');
+                        if (!cityInput && visitorCity) {
+                            const inp = document.createElement('input');
+                            inp.type = 'hidden'; inp.name = 'visitorCity'; inp.value = visitorCity;
+                            form.appendChild(inp);
+                        }
+                        const ipInput = form.querySelector('input[name="visitorIP"]');
+                        if (!ipInput && visitorIP) {
+                            const inp = document.createElement('input');
+                            inp.type = 'hidden'; inp.name = 'visitorIP'; inp.value = visitorIP;
+                            form.appendChild(inp);
+                        }
+                    });
+                }
+            }, 1000);
+        });
+
+
+
+        function renderTagCloud(articles) {
+            const cloud = document.getElementById('tagCloud');
+            if (!cloud) return;
+            const tagMap = {};
+            articles.forEach(a => {
+                (a.tags || []).forEach(t => {
+                    if (!tagMap[t]) tagMap[t] = 0;
+                    tagMap[t]++;
+                });
+            });
+            const tags = Object.entries(tagMap).sort((a,b) => b[1]-a[1]);
+            if (tags.length === 0) { cloud.style.display = 'none'; return; }
+            cloud.style.display = 'flex';
+            cloud.innerHTML = '<span style="font-size:.78rem;color:var(--text-dim);margin-right:4px;line-height:2">🏷️</span>' +
+                tags.map(([tag, count]) =>
+                    `<span class="tag-item" data-tag="${htmlEncode(tag)}" onclick="filterByTag('${htmlEncode(tag)}', this)">${htmlEncode(tag)} <small>${count}</small></span>`
+                ).join('');
+        }
+        function htmlEncode(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+        function filterByTag(tag, el) {
+            document.querySelectorAll('.tag-item').forEach(e => e.classList.remove('active'));
+            if (el) el.classList.add('active');
+            const info = document.getElementById('tagFilterInfo');
+            const name = document.getElementById('tagFilterName');
+            if (info) info.style.display = '';
+            if (name) name.textContent = tag;
+            // Filter article list
+            document.querySelectorAll('#articleList .article-card').forEach(card => {
+                const tags = (card.dataset.tags || '').split(',');
+                card.style.display = tags.includes(tag) ? '' : 'none';
+            });
+        }
+        function clearTagFilter() {
+            document.querySelectorAll('.tag-item').forEach(e => e.classList.remove('active'));
+            document.getElementById('tagFilterInfo').style.display = 'none';
+            document.querySelectorAll('#articleList .article-card').forEach(card => card.style.display = '');
+        }
+        // Hook into existing renderArticleList
+        const _origRenderList = window.renderArticleList;
+        if (_origRenderList) {
+            window.renderArticleList = function(filterText) {
+                _origRenderList(filterText);
+                const articles = window._allArticles || [];
+                renderTagCloud(articles);
+            };
+        }
+        // Also watch articleList load
+        document.addEventListener('DOMContentLoaded', () => {
+            const obs = new MutationObserver(() => {
+                if (document.querySelector('#articleList .article-card') && !document.querySelector('.tag-cloud .tag-item')) {
+                    const articles = window._allArticles || [];
+                    renderTagCloud(articles);
+                }
+            });
+            obs.observe(document.getElementById('articleList') || document.body, { childList: true, subtree: true });
+        });
+        // Add data-tags on article cards
+        const _origRenderCard = window.renderArticleCard;
+        if (_origRenderCard) {
+            window.renderArticleCard = function(a) {
+                const card = _origRenderCard(a);
+                if (card && a.tags) card.dataset.tags = a.tags.join(',');
+                return card;
+            };
+        }
+
+</script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Inter:opsz@14..32&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -26,22 +287,13 @@
         *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
         html { scroll-behavior:smooth; -webkit-text-size-adjust:100%; }
         body {
-            overflow-x: hidden;
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background: var(--bg);
             color: var(--text);
-            line-height: 1.75;
+            line-height: 1.7;
             transition: background .35s, color .35s;
             -webkit-font-smoothing: antialiased;
         }
-        body::before {
-            content: '';
-            position: fixed; inset: 0; pointer-events: none; z-index: 0;
-            opacity: .035;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-        }
-        .page, .player-wrap, .modal-overlay, #readingProgress, #toTop, .toast-wrap { position: relative; z-index: 1; }
-        .page { z-index: 1; }
         a { color:inherit; text-decoration:none; }
         button { font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; font-size:inherit; }
         input, textarea { font-family:inherit; font-size:inherit; }
@@ -49,37 +301,30 @@
 
         /* ===== Theme ===== */
         :root {
-            --bg: #f5f0e8;
-            --bg-card: #fdfaf4;
-            --bg-soft: #ebe4d8;
-            --text: #2a2218;
-            --text-secondary: #7d6b5a;
-            --text-dim: #a89888;
-            --border: #d6cbbd;
-            --accent: #5a3f2c;
-            --accent-hover: #2a2218;
-            --link: #6b4f3a;
-            --shadow: 0 2px 10px rgba(74,55,40,.06);
-            --shadow-soft: 0 1px 3px rgba(74,55,40,.04);
-            --radius: 10px;
-            --font-serif: 'Noto Serif SC', 'Songti SC', 'SimSun', Georgia, serif;
-            --font-mono: 'JetBrains Mono', ui-monospace, monospace;
-            --read-size: 1.05rem;
-            --ease: .18s ease;
+            --bg: #f6f2ec;
+            --bg-card: #fefcf8;
+            --bg-soft: #ede8e1;
+            --text: #2c2416;
+            --text-secondary: #8c7a6b;
+            --text-dim: #b5a698;
+            --border: #dcd3c9;
+            --accent: #4a3728;
+            --accent-hover: #2c2416;
+            --shadow: 0 1px 4px rgba(0,0,0,.04);
+            --font-serif: 'Noto Serif SC', 'Georgia', serif;
+            --font-mono: 'JetBrains Mono', monospace;
         }
         [data-theme="dark"] {
-            --bg: #14110e;
-            --bg-card: #1c1915;
-            --bg-soft: #26211b;
-            --text: #e4d9ca;
-            --text-secondary: #9a8774;
-            --text-dim: #6a5c4e;
-            --border: #3a3229;
-            --accent: #e4d9ca;
-            --accent-hover: #f4ebe0;
-            --link: #cbb8a0;
-            --shadow: 0 2px 14px rgba(0,0,0,.35);
-            --shadow-soft: 0 1px 4px rgba(0,0,0,.25);
+            --bg: #181510;
+            --bg-card: #221e18;
+            --bg-soft: #2a251e;
+            --text: #d9d0c4;
+            --text-secondary: #8c7a6b;
+            --text-dim: #5a4e42;
+            --border: #332c24;
+            --accent: #d9d0c4;
+            --accent-hover: #f0e6d8;
+            --shadow: 0 1px 6px rgba(0,0,0,.3);
         }
 
         /* ===== Layout ===== */
@@ -114,8 +359,7 @@
         /* ===== Views ===== */
         .view { display:none; padding:48px 0 60px; flex:1; }
         .view.active { display:block; animation:fadeIn .3s ease; }
-        @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes riseIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
         /* ===== Home ===== */
         .home-hero { padding:60px 0 48px; text-align:center; }
@@ -333,7 +577,7 @@
 
         /* ===== Music Player ===== */
         .player-wrap {
-            position:fixed; bottom:28px; right:28px; z-index:1000; /* 播放器可点，回顶在其上方留空 */
+            position:fixed; bottom:28px; right:28px; z-index:800;
             display:flex; align-items:center;
             transition:transform .4s cubic-bezier(.22,1,.36,1);
         }
@@ -555,7 +799,7 @@
         /*  方案四：回到顶部按钮                                              */
         /* ================================================================ */
         #backToTop {
-            position:fixed; bottom:calc(28px + 86px + 14px); right:28px; z-index:900;
+            position:fixed; bottom:28px; right:28px; z-index:9000;
             width:40px; height:40px; border-radius:50%;
             background:var(--accent-soft); color:var(--accent);
             border:1px solid var(--accent);
@@ -792,25 +1036,6 @@
             cursor: pointer;
         }
         .comment-del:hover { color: var(--accent); }
-        .comment-email {
-            font-size: .72rem; color: var(--text-dim); margin-left: 6px;
-        }
-        .comment-body.markdown-body {
-            font-size: .88rem; line-height: 1.7; color: var(--text-secondary);
-        }
-        .comment-body.markdown-body p { margin: 0 0 .5em; }
-        .comment-body.markdown-body p:last-child { margin-bottom: 0; }
-        .comment-body.markdown-body a { color: var(--accent); }
-        .comment-body.markdown-body code {
-            font-family: var(--font-mono); font-size: .85em;
-            background: var(--bg-soft); padding: 1px 5px; border-radius: 3px;
-        }
-        .comment-body.markdown-body pre {
-            background: var(--bg-soft); padding: 10px; border-radius: 6px; overflow: auto;
-        }
-        .comment-form-hint {
-            font-size: .72rem; color: var(--text-dim); margin-top: 4px;
-        }
 
 
         .music-modal .search-row { display:flex; gap:8px; margin:12px 0; }
@@ -841,769 +1066,88 @@
         .art-admin-actions span.danger { color:#b91c1c; }
         #detailAdminActions { display:none; }
         #detailAdminActions.show { display:inline-flex !important; }
-
-        
-        /* ===== Article covers + lazy images ===== */
-        .cover-thumb {
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            object-fit: cover;
-            border-radius: 10px;
-            border: 1px solid var(--border);
-            background: var(--bg-soft);
-            display: block;
-            margin-bottom: 12px;
-            opacity: 0;
-            transition: opacity .35s ease, transform .2s ease;
-        }
-        .cover-thumb.is-loaded, .cover-thumb.no-lazy { opacity: 1; }
-        .cover-thumb-wrap {
-            position: relative;
-            overflow: hidden;
-            border-radius: 10px;
-            margin-bottom: 12px;
-            background: linear-gradient(135deg, var(--bg-soft), var(--bg-card));
-            border: 1px solid var(--border);
-            aspect-ratio: 16 / 9;
-        }
-        .cover-thumb-wrap .cover-thumb {
-            margin: 0; border: none; border-radius: 0;
-            height: 100%; width: 100%;
-        }
-        .cover-thumb-wrap.skeleton::after {
-            content: '';
-            position: absolute; inset: 0;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent);
-            animation: coverShimmer 1.2s infinite;
-        }
-        @keyframes coverShimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-        .home-recent-item .cover-thumb-wrap { margin-bottom: 10px; }
-        .art-entry .cover-thumb-wrap { margin-bottom: 14px; cursor: pointer; }
-        .art-entry:hover .cover-thumb { transform: scale(1.01); }
-        .detail-cover-wrap {
-            margin: 8px 0 22px;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid var(--border);
-            background: var(--bg-soft);
-            aspect-ratio: 21 / 9;
-            max-height: 320px;
-        }
-        .detail-cover-wrap img {
-            width: 100%; height: 100%; object-fit: cover; display: block;
-            opacity: 0; transition: opacity .4s ease;
-        }
-        .detail-cover-wrap img.is-loaded { opacity: 1; }
-        .cover-editor { display: flex; flex-direction: column; gap: 10px; }
-        .cover-editor-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-        .cover-editor-row input[type="text"] { flex: 1; min-width: 180px; }
-        .cover-preview-box {
-            width: 100%; max-width: 320px; aspect-ratio: 16/9;
-            border: 1px dashed var(--border); border-radius: 10px;
-            background: var(--bg-soft); overflow: hidden;
-            display: flex; align-items: center; justify-content: center;
-            color: var(--text-dim); font-size: .82rem;
-        }
-        .cover-preview-box img { width: 100%; height: 100%; object-fit: cover; display: none; }
-        .cover-preview-box.has-img img { display: block; }
-        .cover-preview-box.has-img span { display: none; }
-        .cover-hint { font-size: .78rem; color: var(--text-dim); line-height: 1.5; }
-        img.lazy-img { opacity: 0; transition: opacity .35s ease; }
-        img.lazy-img.is-loaded { opacity: 1; }
-
-        
-        let autoSaveTimer = null;
-        function initAutoSave() {
-            const title = document.getElementById('editTitle');
-            const tag = document.getElementById('editTag');
-            const content = document.getElementById('editContent');
-            if (!title || !content) return;
-            const save = () => {
-                const draft = { title: title.value, tag: tag?tag.value:'', content: content.value, ts: Date.now() };
-                try { localStorage.setItem('blog_draft', JSON.stringify(draft)); } catch(e) {}
-            };
-            if (autoSaveTimer) clearInterval(autoSaveTimer);
-            autoSaveTimer = setInterval(save, 15000);
-        }
-        function restoreDraft() {
-            try {
-                const raw = localStorage.getItem('blog_draft');
-                if (!raw) return;
-                const draft = JSON.parse(raw);
-                const t=document.getElementById('editTitle'), g=document.getElementById('editTag'), c=document.getElementById('editContent');
-                if(t&&draft.title)t.value=draft.title; if(g&&draft.tag)g.value=draft.tag; if(c&&draft.content)c.value=draft.content;
-            } catch(e) {}
-        }
-        function clearDraft() { try { localStorage.removeItem('blog_draft'); } catch(e) {} }
-        const origOE3 = openEditor;
-        openEditor = function(idx) { origOE3(idx); if(idx===undefined||idx===null){setTimeout(()=>{restoreDraft();initAutoSave();},100);} };
-        const origSA3 = saveArticle;
-        saveArticle = async function() { await origSA3.call(this,...arguments); clearDraft(); };
-
-        
-        let visitorIP = null;
-        async function getVisitorIP() {
-            try {
-                const ctrl = new AbortController();
-                const timer = setTimeout(() => ctrl.abort(), 5000);
-                const res = await fetch('https://ip-api.com/json/?fields=query,city,region,country,isp', { signal: ctrl.signal });
-                clearTimeout(timer);
-                if (!res.ok) return;
-                visitorIP = await res.json();
-            } catch(e) {}
-        }
-        const origSM2 = submitMessage;
-        submitMessage = async function() {
-            if (visitorIP) {
-                const ta = document.getElementById('msgText');
-                if (ta) ta.dataset.ip = JSON.stringify(visitorIP);
-            }
-            return origSM2(...arguments);
-        };
-        const origSC2 = submitComment;
-        submitComment = async function() {
-            if (visitorIP) {
-                const ta = document.getElementById('commentText');
-                if (ta) ta.dataset.ip = JSON.stringify(visitorIP);
-            }
-            return origSC2(...arguments);
-        };
-        getVisitorIP();
-
-
-        .tag-filter-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
-        .tag-filter-bar span { padding:4px 14px; border-radius:20px; font-size:.78rem;
-            border:1px solid var(--border); cursor:pointer; color:var(--text-secondary);
-            background:var(--bg-card); transition:all .15s; user-select:none; }
-        .tag-filter-bar span:hover { border-color:var(--accent); color:var(--text); }
-        .tag-filter-bar span.active { background:var(--accent); color:var(--bg); border-color:var(--accent); }
-
-        
-        function initTagFilter() {
-            const bar = document.getElementById('tagFilterBar');
-            if (!bar) return;
-            bar.addEventListener('click', (e) => {
-                const span = e.target.closest('span');
-                if (!span) return;
-                bar.querySelectorAll('span').forEach(s => s.classList.remove('active'));
-                span.classList.add('active');
-                renderArticleList(span.dataset.tag || '');
-            });
-        }
-
-
-        .code-wrap { position: relative; }
-        .code-copy-btn {
-            position: absolute; top: 6px; right: 6px; z-index: 2;
-            background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 6px; width: 28px; height: 28px;
-            font-size: .75rem; cursor: pointer; opacity: 0;
-            transition: opacity .15s; color: var(--text-secondary);
-            display: flex; align-items: center; justify-content: center;
-        }
-        .code-wrap:hover .code-copy-btn { opacity: 1; }
-        .code-copy-btn:hover { background: var(--bg-soft); color: var(--text); }
-        .code-copy-btn.copied { opacity: 1; color: #22c55e; }
-
-        
-        function initCopyCode() {
-            document.querySelectorAll('pre code').forEach((block) => {
-                const pre = block.parentElement;
-                if (pre.classList.contains('code-wrap')) return;
-                pre.classList.add('code-wrap');
-                const btn = document.createElement('button');
-                btn.className = 'code-copy-btn'; btn.textContent = '📋'; btn.title = '复制代码';
-                btn.addEventListener('click', async () => {
-                    try { await navigator.clipboard.writeText(block.textContent);
-                        btn.textContent = '✓'; btn.classList.add('copied');
-                        setTimeout(() => { btn.textContent = '📋'; btn.classList.remove('copied'); }, 1800); }
-                    catch(e) { btn.textContent = '✗'; setTimeout(() => btn.textContent = '📋', 1200); }
-                });
-                pre.appendChild(btn);
-            });
-        }
-
-
-        .lightbox-overlay { position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.85); display:flex;
-            align-items:center; justify-content:center; opacity:0; pointer-events:none;
-            transition:opacity .25s ease; cursor:zoom-out; }
-        .lightbox-overlay.open { opacity:1; pointer-events:auto; }
-        .lightbox-overlay img { max-width:92vw; max-height:92vh; object-fit:contain; border-radius:4px; box-shadow:0 8px 40px rgba(0,0,0,.4); }
-        .lightbox-close { position:absolute; top:18px; right:18px; color:rgba(255,255,255,.7); font-size:1.8rem; cursor:pointer; line-height:1; }
-        .lightbox-close:hover { color:#fff; }
-
-        
-        function initLightbox() {
-            const overlay = document.getElementById('lightboxOverlay');
-            const img = document.getElementById('lightboxImg');
-            if (!overlay || !img) return;
-            const close = document.getElementById('lightboxClose');
-            const pics = document.querySelectorAll('.art-content img, .gh-editor-preview img');
-            const handle = (el) => { el.style.cursor = 'zoom-in'; el.addEventListener('click', (e) => { e.stopPropagation(); img.src = el.src; overlay.classList.add('open'); }); };
-            pics.forEach(handle);
-            close.addEventListener('click', () => overlay.classList.remove('open'));
-            overlay.addEventListener('click', () => overlay.classList.remove('open'));
-            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') overlay.classList.remove('open'); });
-        }
-
-        
-        function initShareBtn() {
-            const btn = document.getElementById('shareBtn');
-            if (!btn) return;
-            btn.addEventListener('click', async () => {
-                const url = window.location.href;
-                const title = document.title || '芸芣苡';
-                if (navigator.share) { try { await navigator.share({ title, url }); return; } catch(e) {} }
-                try { await navigator.clipboard.writeText(url); btn.textContent = '✓ 已复制'; setTimeout(() => btn.textContent = '↗ 分享', 2000); }
-                catch(e) { prompt('复制链接:', url); }
-            });
-        }
-
-        
-        const origOA = openArticle;
-        openArticle = function(id) { origOA(id); setTimeout(() => { initLightbox(); initCopyCode(); initShareBtn(); }, 300); };
-
-        /* ===== Paper scholar UX polish ===== */
-        /* 代码块复制按钮 */
-        .copy-btn {
-            position: absolute; top: 6px; right: 6px;
-            padding: 3px 10px; font-size: .72rem; border: none;
-            border-radius: 6px; background: var(--bg-soft);
-            color: var(--text-dim); cursor: pointer; opacity: 0;
-            transition: opacity .15s ease; z-index: 2;
-        }
-        pre:hover .copy-btn { opacity: 1; }
-        .copy-btn:hover { background: var(--accent); color: var(--bg); }
-        /* Lightbox */
-        .lightbox-overlay {
-            position: fixed; inset: 0; z-index: 9999;
-            background: rgba(0,0,0,.82); display: flex;
-            align-items: center; justify-content: center;
-            opacity: 0; transition: opacity .2s ease;
-            padding: 20px; cursor: zoom-out;
-        }
-        .lightbox-overlay.show { opacity: 1; }
-        .lightbox-close {
-            position: fixed; top: 20px; right: 24px;
-            font-size: 2rem; color: #fff; cursor: pointer; z-index: 2;
-            line-height: 1; opacity: .7;
-        }
-        .lightbox-close:hover { opacity: 1; }
-        .lightbox-img {
-            max-width: 95%; max-height: 92vh; object-fit: contain;
-            border-radius: 8px; box-shadow: 0 8px 40px rgba(0,0,0,.4); cursor: default;
-        }
-        /* 分享按钮面板 */
-        .share-panel {
-            display: none; position: absolute; top: 100%; right: 0;
-            background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: var(--radius); box-shadow: var(--shadow);
-            padding: 8px; z-index: 100; white-space: nowrap;
-        }
-        .share-panel.show { display: flex; gap: 6px; }
-        .share-panel a {
-            display: inline-flex; align-items: center; gap: 4px;
-            padding: 6px 12px; border-radius: 6px;
-            font-size: .82rem; color: var(--text); text-decoration: none;
-        }
-        .share-panel a:hover { background: var(--bg-soft); }
-        /* 标签云 */
-        #tagCloud {
-            display: flex; flex-wrap: wrap; gap: 10px 14px;
-            padding: 20px 0; align-items: center; justify-content: center;
-        }
-        .tag-cloud-item {
-            cursor: pointer; color: var(--text-secondary);
-            transition: color .15s ease, transform .15s ease;
-            padding: 2px 0; line-height: 1.4;
-        }
-        .tag-cloud-item:hover { color: var(--accent); transform: translateY(-1px); }
-        .tag-cloud-item sup { font-size: .6rem; margin-left: 2px; opacity: .5; }
-        /* 访客IP显示 */
-        .visitor-loc { font-size: .72rem; color: var(--text-dim); margin-top: 2px; }
-        /* 统计 */
-        .busuanzi-wrap { text-align: center; font-size: .78rem; color: var(--text-dim); margin-top: 40px; padding: 12px 0; border-top: 1px solid var(--border); }
-        .busuanzi-wrap span { margin: 0 4px; }
-
-        .art-entry {
-            padding: 18px 16px !important;
-            border: 1px solid var(--border) !important;
-            border-bottom: 1px solid var(--border) !important;
-            border-radius: var(--radius) !important;
-            background: var(--bg-card);
-            box-shadow: var(--shadow-soft);
-            transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
-        }
-        .art-entry:hover {
-            border-color: var(--accent) !important;
-            box-shadow: var(--shadow);
-            transform: translateY(-1px);
-        }
-        .standalone-art-list { gap: 12px !important; }
-
-        .header { padding: 22px 0 16px; }
-        .blog-title {
-            display: inline-flex; align-items: center; gap: 8px;
-            transition: opacity var(--ease);
-        }
-        .blog-title .logo-mark {
-            width: 28px; height: 28px; border-radius: 50%;
-            border: 1px solid var(--border);
-            background: var(--bg-card);
-            display: inline-flex; align-items: center; justify-content: center;
-            font-family: var(--font-serif); font-size: .85rem; font-weight: 700;
-            color: var(--accent); letter-spacing: 0;
-            box-shadow: var(--shadow-soft);
-        }
-        .blog-title img.logo-img {
-            width: 28px; height: 28px; border-radius: 50%;
-            object-fit: cover; border: 1px solid var(--border);
-            display: none;
-        }
-        .blog-title.has-logo img.logo-img { display: inline-block; }
-        .blog-title.has-logo .logo-mark { display: none; }
-        .nav a, .nav button { transition: background var(--ease), color var(--ease), transform var(--ease); }
-        .nav a:active, .nav button:active { transform: scale(.97); }
-
-        .home-hero { padding: 36px 0 20px; text-align: center; }
-        .home-name {
-            font-family: var(--font-serif);
-            font-size: clamp(2rem, 5.5vw, 2.8rem);
-            font-weight: 700; letter-spacing: 10px;
-            color: var(--text); line-height: 1.25;
-        }
-        .home-quote {
-            margin-top: 14px;
-            font-family: var(--font-serif);
-            font-size: .98rem;
-            color: var(--text-secondary);
-            min-height: 1.5em;
-            letter-spacing: .08em;
-        }
-        .home-divider {
-            width: 28px; height: 1px; background: var(--border);
-            margin: 22px auto 18px;
-        }
-        .home-mood {
-            font-size: .82rem; color: var(--text-dim);
-            font-family: var(--font-serif); letter-spacing: .12em;
-            margin-bottom: 8px;
-        }
-        .home-sections { display: none !important; } /* 弱化三大入口，内容直出 */
-
-        .home-recent { margin-top: 8px; padding-bottom: 12px; }
-        .home-recent-label {
-            font-size: .75rem; letter-spacing: .2em;
-            color: var(--text-dim); margin-bottom: 14px;
-            font-family: var(--font-serif);
-        }
-        .home-recent-item {
-            display: block !important;
-            padding: 16px 16px 14px !important;
-            margin-bottom: 10px;
-            border: 1px solid var(--border) !important;
-            border-radius: var(--radius);
-            background: var(--bg-card);
-            box-shadow: var(--shadow-soft);
-            cursor: pointer;
-            transition: border-color var(--ease), box-shadow var(--ease), transform var(--ease);
-            animation: riseIn .35s ease both;
-        }
-        .home-recent-item:nth-child(2) { animation-delay: .05s; }
-        .home-recent-item:nth-child(3) { animation-delay: .1s; }
-        .home-recent-item:hover {
-            border-color: var(--accent) !important;
-            box-shadow: var(--shadow);
-            transform: translateY(-1px);
-        }
-        .home-recent-item .row {
-            display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
-        }
-        .home-recent-item .title {
-            font-family: var(--font-serif);
-            font-size: 1.05rem; font-weight: 600; color: var(--text);
-            line-height: 1.4;
-        }
-        .home-recent-item .date {
-            font-size: .75rem; color: var(--text-dim); white-space: nowrap;
-        }
-        .home-recent-item .meta {
-            margin-top: 6px; display: flex; gap: 8px; align-items: center;
-            font-size: .75rem; color: var(--text-secondary);
-        }
-        .home-recent-item .tag-pill {
-            display: inline-block; padding: 1px 8px;
-            border: 1px solid var(--border); border-radius: 999px;
-            font-size: .72rem; color: var(--text-secondary);
-            background: var(--bg-soft);
-        }
-        .home-recent-item .excerpt {
-            margin-top: 8px; font-size: .88rem; line-height: 1.65;
-            color: var(--text-secondary);
-            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        .home-recent-empty, .empty-state {
-            text-align: center; padding: 40px 16px;
-            color: var(--text-secondary); font-family: var(--font-serif);
-            border: 1px dashed var(--border); border-radius: var(--radius);
-            background: var(--bg-card);
-        }
-        .empty-state .empty-icon { font-size: 1.4rem; margin-bottom: 8px; opacity: .7; }
-        .empty-state .empty-sub { font-size: .8rem; color: var(--text-dim); margin-top: 6px; font-family: Inter, sans-serif; }
-
-        .article-item {
-            padding: 18px 16px !important;
-            margin-bottom: 10px;
-            border: 1px solid var(--border) !important;
-            border-radius: var(--radius);
-            background: var(--bg-card);
-            box-shadow: var(--shadow-soft);
-            transition: border-color var(--ease), box-shadow var(--ease), transform var(--ease);
-        }
-        .article-item:hover {
-            border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
-            box-shadow: var(--shadow);
-            transform: translateY(-1px);
-        }
-        .article-item .art-title {
-            font-family: var(--font-serif) !important;
-            font-size: 1.12rem !important; font-weight: 600 !important;
-        }
-        .article-item .art-excerpt {
-            margin-top: 8px; font-size: .88rem; line-height: 1.65;
-            color: var(--text-secondary);
-            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-        }
-
-        /* Reading */
-        #readingProgress {
-            position: fixed; top: 0; left: 0; height: 2px; width: 0;
-            background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 40%, var(--bg)));
-            z-index: 1000; transition: width .08s linear;
-            box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 30%, transparent);
-        }
-        .art-content, .gh-editor-preview, #detailContent {
-            font-size: var(--read-size);
-            line-height: 1.85;
-            letter-spacing: .01em;
-        }
-        .art-content h1, .art-content h2, .art-content h3,
-        #detailContent h1, #detailContent h2, #detailContent h3 {
-            font-family: var(--font-serif);
-            font-weight: 700;
-            line-height: 1.35;
-            margin: 1.6em 0 .7em;
-            color: var(--text);
-        }
-        .art-content h2, #detailContent h2 {
-            padding-bottom: .35em;
-            border-bottom: 1px solid var(--border);
-        }
-        .art-content h3, #detailContent h3 {
-            border-left: 3px solid var(--accent);
-            padding-left: .6em;
-        }
-        .art-content p, #detailContent p { margin: .9em 0; }
-        .art-content a, #detailContent a { color: var(--link); text-decoration: underline; text-underline-offset: 3px; }
-        .art-content code, #detailContent code {
-            font-family: var(--font-mono);
-            font-size: .88em;
-            background: var(--bg-soft);
-            padding: .12em .4em; border-radius: 4px;
-            border: 1px solid var(--border);
-        }
-        .art-content pre, #detailContent pre {
-            background: var(--bg-soft) !important;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 14px 16px !important;
-            overflow: auto;
-            box-shadow: var(--shadow-soft);
-        }
-        .art-content pre code, #detailContent pre code {
-            border: none; background: transparent; padding: 0;
-        }
-        .art-content blockquote, #detailContent blockquote {
-            margin: 1.1em 0;
-            padding: .6em 1em;
-            border-left: 3px solid var(--accent);
-            background: var(--bg-soft);
-            color: var(--text-secondary);
-            border-radius: 0 8px 8px 0;
-            font-family: var(--font-serif);
-        }
-        .detail-toolbar {
-            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-            margin: 8px 0 18px;
-        }
-        .font-size-ctrl {
-            display: inline-flex; align-items: center; gap: 4px;
-            border: 1px solid var(--border); border-radius: 999px;
-            padding: 2px; background: var(--bg-card);
-        }
-        .font-size-ctrl button {
-            width: 30px; height: 28px; border-radius: 999px;
-            font-size: .78rem; color: var(--text-secondary);
-        }
-        .font-size-ctrl button:hover { background: var(--bg-soft); color: var(--text); }
-        .font-size-ctrl .fs-label { font-size: .72rem; color: var(--text-dim); padding: 0 4px; min-width: 28px; text-align: center; }
-
-        /* Player polish */
-        .player-wrap {
-            bottom: 20px; right: 18px;
-            border-radius: 14px !important;
-            box-shadow: var(--shadow) !important;
-            border: 1px solid var(--border) !important;
-            backdrop-filter: blur(8px);
-            max-width: min(320px, calc(100vw - 28px));
-        }
-        .player-wrap.collapsed {
-            width: auto !important;
-            min-width: 0;
-        }
-        .player-wrap.collapsed .player-body { display: none !important; }
-        .player-cover {
-            width: 36px; height: 36px; border-radius: 8px;
-            background: var(--bg-soft); border: 1px solid var(--border);
-            object-fit: cover; flex-shrink: 0;
-            display: none;
-        }
-        .player-cover.show { display: block; }
-        .player-body { gap: 10px !important; }
-        .player-info .song { font-family: var(--font-serif); font-weight: 600; }
-        .player-fail {
-            font-size: .72rem; color: #b91c1c; margin-top: 2px; display: none;
-        }
-        .player-fail.show { display: block; }
-
-        #toTop {
-            position: fixed;
-            right: 28px;
-            /* 固定抬到播放器上方，避免挡住播放控件 */
-            bottom: calc(28px + 86px + 14px);
-            z-index: 900;
-            width: 36px; height: 36px; border-radius: 50%;
-            border: 1px solid var(--border); background: var(--bg-card);
-            color: var(--text-secondary); box-shadow: var(--shadow-soft);
-            opacity: 0; pointer-events: none;
-            transition: opacity var(--ease), transform var(--ease), bottom .25s ease;
-            font-size: .85rem;
-        }
-        #toTop.show { opacity: 1; pointer-events: auto; }
-        #toTop:hover { color: var(--text); transform: translateY(-2px); }
-        body.player-collapsed #toTop { bottom: calc(28px + 52px + 12px); }
-
-        .skeleton {
-            background: linear-gradient(90deg, var(--bg-soft) 25%, var(--bg-card) 50%, var(--bg-soft) 75%);
-            background-size: 200% 100%;
-            animation: sk 1.2s ease infinite;
-            border-radius: 8px; height: 14px; margin: 10px 0;
-        }
-        @keyframes sk { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-
-        @media (max-width: 600px) {
-            .home-hero { padding: 24px 0 12px; }
-            .home-name { letter-spacing: 6px; }
-            .view { padding: 28px 0 48px; }
-            .page { padding: 0 16px; }
-            .player-wrap { bottom: 14px; right: 12px; }
-            #toTop {
-                right: 12px;
-                bottom: calc(14px + 80px + 12px);
-            }
-            body.player-collapsed #toTop { bottom: calc(14px + 48px + 10px); }
-        }
-
         .blog-title { user-select:none; }
         
-        /* 文章卡片：封面占上半部分 */
-        .home-recent-item, .art-entry {
-            display: flex !important;
-            flex-direction: column !important;
-            overflow: hidden;
-            padding: 0 !important;
+        .code-wrap { position: relative; }
+        .copy-code-btn {
+            position: absolute; right: 8px; top: 8px;
+            padding: 2px 10px; font-size: .72rem;
+            border: 1px solid var(--border); border-radius: 6px;
+            background: var(--bg-card); color: var(--text-secondary);
+            cursor: pointer; opacity: 0; transition: opacity .2s;
+            z-index: 2; line-height: 1.6;
         }
-        .home-recent-item .cover-thumb-wrap,
-        .art-entry .cover-thumb-wrap {
-            width: 100% !important;
-            height: 0 !important;
-            padding-bottom: 52% !important;
-            margin: 0 !important;
-            border-radius: 0 !important;
-            border: none !important;
-            border-bottom: 1px solid var(--border) !important;
-            position: relative;
-            flex-shrink: 0;
-        }
-        .home-recent-item .cover-thumb-wrap .cover-thumb,
-        .art-entry .cover-thumb-wrap .cover-thumb {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .home-recent-item .card-body,
-        .art-entry .card-body {
-            padding: 14px 16px 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        .home-recent-item .row { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
-        .home-recent-item .title, .art-entry .art-title {
-            font-family: var(--font-serif);
-            font-size: 1.05rem;
-            font-weight: 600;
-            line-height: 1.4;
-        }
-        /* 详情页：标题区模糊封面背景（参考图） */
-        .article-hero {
-            position: relative;
-            /* 接近参考站：约半屏高度，略全宽铺开 */
-            width: 100vw;
-            max-width: 100vw;
-            margin-left: calc(50% - 50vw);
-            margin-right: calc(50% - 50vw);
-            margin-top: 0;
-            margin-bottom: 8px;
-            min-height: 48vh;
-            height: 48vh;
-            max-height: 520px;
-            border-radius: 0;
-            overflow: hidden;
-            background: #1a1714;
-            border: none;
-            display: flex;
-            align-items: flex-end;
-        }
-        .article-hero-bg {
-            position: absolute;
-            inset: 0;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            /* 轻微模糊：能看清画面，不是糊成一片 */
-            filter: blur(3px) saturate(1.08);
-            transform: scale(1.06);
-            opacity: 1;
-        }
-        .article-hero-bg::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            /* 只做下半加深，保证标题可读，不要整块压黑 */
-            background: linear-gradient(
-                180deg,
-                rgba(10, 8, 6, 0.18) 0%,
-                rgba(10, 8, 6, 0.28) 40%,
-                rgba(10, 8, 6, 0.62) 100%
-            );
-        }
-        html.dark .article-hero-bg::after {
-            background: linear-gradient(
-                180deg,
-                rgba(0, 0, 0, 0.22) 0%,
-                rgba(0, 0, 0, 0.32) 42%,
-                rgba(0, 0, 0, 0.68) 100%
-            );
-        }
-        .article-hero-fg {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            max-width: 720px;
-            margin: 0 auto;
-            padding: 48px 22px 36px;
-            color: #f8f4ee;
-            text-align: left;
-            box-sizing: border-box;
-        }
-        .article-hero-fg h1 {
-            font-family: var(--font-serif);
-            font-size: clamp(1.55rem, 5.5vw, 2.15rem);
-            font-weight: 700;
-            line-height: 1.32;
-            margin: 0 0 14px;
-            color: #fffef9;
-            text-shadow: 0 1px 10px rgba(0,0,0,.28);
-        }
-        .article-hero-fg .hero-meta {
-            font-size: .84rem;
-            color: rgba(255,255,255,.88);
-            line-height: 1.75;
-            letter-spacing: .02em;
-            text-shadow: 0 1px 6px rgba(0,0,0,.25);
-        }
-        .article-hero.no-cover {
-            min-height: auto;
-            height: auto;
-            max-height: none;
-            width: 100%;
-            margin-left: 0;
-            margin-right: 0;
-            background: transparent;
-            border: none;
-            display: block;
-        }
-        .article-hero.no-cover .article-hero-bg { display: none; }
-        .article-hero.no-cover .article-hero-fg {
-            padding: 8px 0 12px;
-            color: var(--text);
-            max-width: none;
-            margin: 0;
-        }
-        .article-hero.no-cover .article-hero-fg h1 {
-            color: var(--text);
-            text-shadow: none;
-            font-size: clamp(1.5rem, 4.5vw, 2rem);
-        }
-        .article-hero.no-cover .hero-meta { color: var(--text-dim); text-shadow: none; }
-        @media (min-width: 860px) {
-            .article-hero {
-                min-height: 46vh;
-                height: 46vh;
-                max-height: 480px;
-                border-radius: 14px;
-                width: 100%;
-                max-width: 100%;
-                margin-left: 0;
-                margin-right: 0;
-            }
-        }
-        @media (max-width: 640px) {
-            .article-hero {
-                min-height: 46vh;
-                height: 46vh;
-            }
-            .article-hero-fg {
-                padding: 40px 18px 28px;
-            }
-        }
-        .detail-cover-legacy { display: none !important; }
+        .code-wrap:hover .copy-code-btn { opacity: .8; }
+        .copy-code-btn.copied { opacity: 1 !important; background: #2ea043; color: #fff; border-color: #2ea043; }
 
-    </style>
+        .lightbox-wrap { cursor: zoom-in; }
+        .lightbox-overlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,.85); backdrop-filter: blur(8px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity .25s;
+            cursor: zoom-out;
+        }
+        .lightbox-overlay.show { opacity: 1; pointer-events: auto; }
+        .lightbox-overlay img { max-width: 92vw; max-height: 92vh; border-radius: 6px; box-shadow: 0 8px 40px rgba(0,0,0,.4); }
+        .lightbox-overlay .lb-close {
+            position: absolute; top: 20px; right: 28px;
+            color: #fff; font-size: 1.5rem; cursor: pointer; opacity: .6;
+            border: none; background: none;
+        }
+        .lightbox-overlay .lb-close:hover { opacity: 1; }
+
+        .shortcuts-panel {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 24px 32px; z-index: 9998;
+            min-width: 280px; box-shadow: 0 8px 40px rgba(0,0,0,.3);
+            opacity: 0; pointer-events: none; transition: opacity .2s;
+        }
+        .shortcuts-panel.show { opacity: 1; pointer-events: auto; }
+        .shortcuts-panel h3 { margin: 0 0 16px; font-size: 1rem; }
+        .shortcuts-panel .ks-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: .85rem; }
+        .shortcuts-panel .ks-key {
+            background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+            padding: 1px 8px; font-family: monospace; font-size: .8rem;
+        }
+        .shortcuts-overlay {
+            position: fixed; inset: 0; z-index: 9997; background: rgba(0,0,0,.3);
+            opacity: 0; pointer-events: none;
+        }
+        .shortcuts-overlay.show { opacity: 1; pointer-events: auto; }
+
+        .tag-cloud { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px 0; }
+        .tag-cloud .tag-item {
+            padding: 4px 14px; border-radius: 20px; font-size: .82rem;
+            border: 1px solid var(--border); background: var(--bg-card);
+            color: var(--text-secondary); cursor: pointer; transition: all .2s;
+        }
+        .tag-cloud .tag-item:hover { border-color: var(--accent); color: var(--accent); }
+        .tag-cloud .tag-item.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .tag-filter-info { font-size: .82rem; color: var(--text-dim); padding: 4px 0 12px; display: none; }
+</style>
+
+<script defer src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+<link rel="dns-prefetch" href="//busuanzi.ibruce.info">
+<link rel="dns-prefetch" href="//ip-api.com">
+<link rel="preconnect" href="//busuanzi.ibruce.info" crossorigin>
 </head>
 <body>
     <div id="readingProgress"></div>
-    <button type="button" id="toTop" title="回到顶部">↑</button>
     <div class="page">
         <!-- ========== HEADER ========== -->
         <header class="header">
-            <a href="#" class="blog-title" id="siteLogo" data-view="home"><span class="logo-mark" aria-hidden="true">芸</span><img class="logo-img" id="siteLogoImg" alt="logo" src="logo.png" onerror="this.style.display='none'" /><span class="logo-text">芸芣苡</span></a>
+            <a href="#" class="blog-title" id="siteLogo" data-view="home">芸芣苡</a>
             <nav class="nav">
                 <a href="#" data-view="home" class="active">首页</a>
                 <a href="#" data-view="articles">文章</a>
                 <a href="#" data-view="toolbox" id="navToolbox" style="display:none">工具箱</a>
                 <a href="#" data-view="about">关于</a>
                 <a href="#" data-view="guestbook">留言</a>
-                <span class="nav-sep"></span>
+                <span class="nav-sep"><span class="meta-item share-btn-wrap" style="cursor:pointer" onclick="shareArticle()">🔗 <span class="share-btn">分享</span></span>
+            </span>
                 <button class="theme-btn" id="themeToggle" aria-label="切换主题">○</button>
                 <button id="loginBtn" style="display:none">登录</button>
                 <span id="loginStatus" style="display:none" class="login-status">
@@ -1619,21 +1163,24 @@
                 <div class="home-name">芸芣苡</div>
                 <div class="home-quote loading" id="dailyQuote">载其见兮</div>
                 <div class="home-divider"></div>
-                <div class="home-mood" id="homeMood">纸短情长 · 载其见兮</div>
-                <div class="home-sections" style="display:none">
-                    <a href="#" data-view="articles">文章 <span class="arrow">&nbsp;→</span></a>
-                    <a href="#" data-view="timeline">时间线 <span class="arrow">&nbsp;→</span></a>
-                    <a href="#" data-view="toolbox" id="homeToolbox" style="display:none">工具箱 <span class="arrow">&nbsp;→</span></a>
-                    <a href="#" data-view="about">关于 <span class="arrow">&nbsp;→</span></a>
+                <div class="home-sections">
+                    <a href="#" data-view="articles">
+                        文章 <span class="arrow">&nbsp;→</span>
+                    </a>
+                    <a href="#" data-view="timeline">
+                        时间线 <span class="arrow">&nbsp;→</span>
+                    </a>
+                    <a href="#" data-view="toolbox" id="homeToolbox" style="display:none">
+                        工具箱 <span class="arrow">&nbsp;→</span>
+                    </a>
+                    <a href="#" data-view="about">
+                        关于 <span class="arrow">&nbsp;→</span>
+                    </a>
                 </div>
             </div>
             <div class="home-recent">
                 <div class="home-recent-label">最近更新</div>
-                <div id="homeRecentList">
-                    <div class="skeleton"></div>
-                    <div class="skeleton" style="width:80%"></div>
-                    <div class="skeleton" style="width:60%"></div>
-                </div>
+                <div id="homeRecentList"></div>
             </div>
         </section>
 
@@ -1645,7 +1192,8 @@
                     <button class="btn btn-sm" id="writeArticleBtn" style="display:none">写文章</button>
                 </div>
             </div>
-            <div id="articleList"></div>
+            <div id="tagCloud" class="tag-cloud" style="display:none"></div>
+<div id="tagFilterInfo" class="tag-filter-info">📌 筛选: <span id="tagFilterName"></span> <a href="#" onclick="clearTagFilter();return false" style="margin-left:8px;color:var(--accent)">✕ 清除</a></div><div id="articleList"></div>
         </section>
         <!-- ========== VIEW: TIMELINE ========== -->
         <section class="view" id="view-timeline">
@@ -1667,7 +1215,7 @@
                 <h3>GitHub</h3>
                 <div class="hint">可选：填写 PAT 用于云端同步（登录后也可由 Secrets 自动注入）</div>
                 <div class="tool-row">
-                    <input type="password" id="ghToken" placeholder="GitHub PAT（可选，用于云端同步）" />
+                    <input type="password" id="ghToken" placeholder="github_pat_..." />
                     <button class="btn btn-sm" id="ghConnectBtn">连接</button>
                 </div>
                 <div id="ghRepoList" class="gh-repo-list"></div>
@@ -1677,10 +1225,6 @@
             <div class="tool-group">
                 <h3>站点默认音乐</h3>
                 <div class="hint">登录后可设置全站默认播放歌曲（写入 site-config.json）</div>
-                <div class="editor-field" style="margin-top:24px">
-                    <label>文章标签云</label>
-                    <div id="tagCloud"></div>
-                </div>
                 <div class="tool-row" style="flex-wrap:wrap; gap:8px;">
                     <input type="text" id="siteMusicName" placeholder="歌名" style="flex:1; min-width:120px;" />
                     <input type="text" id="siteMusicArtist" placeholder="歌手" style="flex:1; min-width:100px;" />
@@ -1703,34 +1247,14 @@
         <section class="view" id="view-article-detail">
             <div style="margin-bottom: 24px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
                 <button class="btn btn-sm btn-outline" onclick="switchView('articles')" style="cursor:pointer;">← 返回文章列表</button>
-                <span class="font-size-ctrl" title="正文字号">
-                    <button type="button" id="fontSizeDown" aria-label="减小字号">A−</button>
-                    <span class="fs-label" id="fontSizeLabel">中</span>
-                    <button type="button" id="fontSizeUp" aria-label="增大字号">A+</button>
-                </span>
                 <span id="detailAdminActions" style="display:none; margin-left:auto; gap:8px;">
                     <button class="btn btn-sm" id="detailEditBtn" type="button">编辑</button>
-                    <button class="btn btn-sm btn-outline" id="shareBtn" type="button" style="font-size:.75rem;">↗ 分享</button>
                     <button class="btn btn-sm btn-outline" id="detailDeleteBtn" type="button">删除</button>
-                
-                    <button class="btn btn-sm btn-outline" id="shareBtn" type="button" style="font-size:.82rem">分享</button>
-                    <div class="share-panel" id="sharePanel">
-                        <a href="#" onclick="navigator.clipboard.writeText(window.location.href);return false">📋 复制链接</a>
-                        <a href="#" onclick="window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(document.title)+'&url='+encodeURIComponent(window.location.href));return false">𝕏</a>
-                    </div>
-            </span>
+                </span>
             </div>
             <article class="standalone-article">
-                <div class="article-hero no-cover" id="articleHero">
-                    <div class="article-hero-bg" id="articleHeroBg"></div>
-                    <div class="article-hero-fg">
-                        <h1 id="detailTitle"></h1>
-                        <div class="hero-meta" id="detailMeta"></div>
-                    </div>
-                </div>
-                <div class="detail-cover-wrap detail-cover-legacy" id="detailCoverWrap" style="display:none">
-                    <img id="detailCoverImg" class="lazy-img" alt="封面" />
-                </div>
+                <h1 id="detailTitle" style="font-family:var(--font-serif); font-size: 2rem; font-weight:700; margin-bottom: 12px; color:var(--text); line-height: 1.3;"></h1>
+                <div class="art-meta" id="detailMeta" style="font-size: .85rem; color: var(--text-dim); margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid var(--border);"></div>
                 <div class="art-content" id="detailContent" style="font-size: 1.02rem; line-height: 1.95; color: var(--text);"></div>
             </article>
             <!-- ===== 留言区 ===== -->
@@ -1739,13 +1263,11 @@
                 <div class="comment-form">
                     <div class="comment-form-row">
                         <input type="text" id="commentName" placeholder="你的昵称" maxlength="20" />
-                        <input type="email" id="commentEmail" placeholder="邮箱（选填，仅管理员可见）" maxlength="80" />
                     </div>
-                    <textarea id="commentText" placeholder="说点什么… 支持 Markdown" maxlength="3000"></textarea>
-                    <div class="comment-form-hint">支持 **粗体**、*斜体*、`代码`、[链接](url) 等 Markdown；邮箱仅管理员可见</div>
+                    <textarea id="commentText" placeholder="说点什么…" maxlength="1000"></textarea>
                     <div class="comment-submit-row">
                         <button class="btn btn-sm" onclick="submitComment()">发表留言</button>
-                        <span style="font-size:.78rem;color:var(--text-dim);">留言会同步到 GitHub，所有访客可见</span>
+                        <span style="font-size:.78rem;color:var(--text-dim);">你留下的每一条留言都会同步到云端</span>
                     </div>
                 </div>
                 <div class="comment-list" id="commentList"></div>
@@ -1763,13 +1285,9 @@
                 <h3 style="margin-bottom: 12px; font-size: .95rem; font-weight: 500;">留下你想说的话 ✨</h3>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                     <input type="text" id="msgNick" placeholder="昵称" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); font-size: .85rem;" />
-                    <input type="email" id="msgEmail" placeholder="邮箱（选填，仅管理员可见）" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); font-size: .85rem;" />
-                </div>
-                <div style="margin-bottom: 10px;">
                     <input type="text" id="msgAvatar" placeholder="头像关键字 (如 cat, dev 等，选填)" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); font-size: .85rem;" />
                 </div>
-                <textarea id="msgContent" placeholder="在此写下你的留言... 支持 Markdown" style="width: 100%; min-height: 80px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); font-size: .85rem; resize: vertical; margin-bottom: 6px; font-family: inherit;"></textarea>
-                <div style="font-size:.72rem;color:var(--text-dim);margin-bottom:10px;">支持 Markdown；邮箱选填且仅管理员可见；留言会同步到 GitHub</div>
+                <textarea id="msgContent" placeholder="在此写下你的留言... (支持 Markdown)" style="width: 100%; min-height: 80px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); font-size: .85rem; resize: vertical; margin-bottom: 10px; font-family: inherit;"></textarea>
                 <div style="display: flex; justify-content: flex-end;">
                     <button class="btn btn-sm" id="msgSubmitBtn" style="cursor: pointer;">提交留言</button>
                 </div>
@@ -1798,7 +1316,10 @@
         <footer class="footer">
             <span>&copy; 2026 芸芣苡</span>
             <span id="footerStatus"></span>
-        </footer>
+        
+        <span style="font-size:.72rem;color:var(--text-dim);margin-left:10px">
+            👁 <span id="busuanzi_value_site_pv">-</span> | 👤 <span id="busuanzi_value_site_uv">-</span>
+        </span></footer>
     </div>
 
     <!-- ========== ARTICLE DETAIL MODAL ========== -->
@@ -1823,19 +1344,6 @@
             <div class="editor-field">
                 <label for="editTag">分类</label>
                 <input type="text" id="editTag" placeholder="分类标签（可选）" />
-            </div>
-            <div class="editor-field">
-                <label>封面图（可选）</label>
-                <div class="cover-editor">
-                    <div class="cover-editor-row">
-                        <input type="text" id="editCover" placeholder="封面图 URL，如 covers/xxx.jpg 或 https://..." />
-                        <input type="file" id="editCoverFile" accept="image/*" style="display:none" />
-                        <button type="button" class="btn-outline btn-sm" id="editCoverPick">本地上传</button>
-                        <button type="button" class="btn-outline btn-sm" id="editCoverClear">清除</button>
-                    </div>
-                    <div class="cover-preview-box" id="editCoverPreview" title="点击选择本地图片" style="cursor:pointer"><span>暂无封面预览</span><img id="editCoverPreviewImg" alt="封面预览" /></div>
-                    <div class="cover-hint">支持图片链接，或本地上传（自动压缩）。首页/列表/详情显示，并启用懒加载。</div>
-                </div>
             </div>
             <div class="editor-field">
                 <div class="gh-editor-tabs">
@@ -1919,9 +1427,7 @@
     <!-- ========== MUSIC PLAYER ========== -->
     <div class="player-wrap" id="playerWrap">
         <div class="player-body">
-            <img class="player-cover" id="playerCover" alt="" />
             <div class="player-info">
-                <div class="player-fail" id="playerFail">播放失败，正在尝试下一首…</div>
                 <span class="song" id="songName">未播放</span>
                 <span class="artist" id="artistName">-</span>
             </div>
@@ -1940,7 +1446,7 @@
         <button class="player-toggle" id="playerToggle" title="折叠"><</button>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script>
         // ================================================================
         //  CONFIG
@@ -1981,73 +1487,13 @@
         // 本地未部署替换时的兜底（仅方便预览；线上请用 Secrets）
         if (ADMIN_CFG.user.indexOf('%%') === 0) ADMIN_CFG.user = 'eli';
         if (ADMIN_CFG.passHash.indexOf('%%') === 0) ADMIN_CFG.passHash = '2c871b07575f444f77dc370cbf970825692bbf8d78eacceeafd7936e40deccdb';
-        if (ADMIN_CFG.ghToken.indexOf('%%') === 0) ADMIN_CFG.ghToken = '';
+        if (ADMIN_CFG.ghToken.indexOf('%%') === 0) ADMIN_CFG.ghToken = '' /* redacted */;
 
         const getGHToken = () =>
             localStorage.getItem('blog_gh_token') ||
             localStorage.getItem('github_token') ||
             (ADMIN_CFG.ghToken || '') ||
             '';
-        // 访客写留言用的仓库写权限（编码存放，避免明文 PAT 触发扫描）
-        // 注意：静态站无法真正隐藏密钥；请用 fine-grained PAT 且仅授权本仓库 Contents 写权限
-        const _GW_A = 'Z2l0aHViX3BhdF8xMUNKQzVGNVkwb1JsaU9kbm1OQllKX2RMb3ZHSTM2dFAyRH';
-        const _GW_B = 'ZoU0VMMXR2aUFBRWkzd0QzTFZjNVlWb0NIQjVYRVRRUVhWN0wzNHl6U3p2bXJs';
-        function getPublicWriteToken() {
-            try {
-                const t = (typeof getGHToken === 'function' ? getGHToken() : '') || '';
-                if (t) return t;
-                if (ADMIN_CFG && ADMIN_CFG.ghToken) return ADMIN_CFG.ghToken;
-                return atob(_GW_A + _GW_B);
-            } catch (e) { return ''; }
-        }
-        async function putJsonToGitHub(path, data, commitMsg) {
-            const token = getPublicWriteToken();
-            if (!token) throw new Error('云端写入未配置');
-            const apiUrl = 'https://api.github.com/repos/eliyfy/yfy_blog/contents/' + path;
-            const headers = {
-                'Authorization': 'token ' + token,
-                'Accept': 'application/vnd.github+json',
-                'Content-Type': 'application/json'
-            };
-            // 冲突重试：先拉最新再追加写
-            let lastErr = null;
-            for (let attempt = 0; attempt < 3; attempt++) {
-                let sha = null;
-                let remote = null;
-                const getRes = await fetch(apiUrl, { headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' } });
-                if (getRes.status === 200) {
-                    const meta = await getRes.json();
-                    sha = meta.sha;
-                    try {
-                        remote = JSON.parse(decodeURIComponent(escape(atob(meta.content.replace(/\n/g, '')))));
-                    } catch (e) { remote = null; }
-                } else if (getRes.status !== 404) {
-                    // try continue with create
-                }
-                // 若 data 是函数，用远端数据生成最终内容
-                const finalData = (typeof data === 'function') ? data(Array.isArray(remote) ? remote : (remote || [])) : data;
-                const body = {
-                    message: commitMsg,
-                    content: btoa(unescape(encodeURIComponent(JSON.stringify(finalData, null, 2)))),
-                    branch: 'main'
-                };
-                if (sha) body.sha = sha;
-                const putRes = await fetch(apiUrl, { method: 'PUT', headers, body: JSON.stringify(body) });
-                if (putRes.status === 200 || putRes.status === 201) {
-                    return finalData;
-                }
-                if (putRes.status === 409 || putRes.status === 422) {
-                    lastErr = new Error('冲突，重试中…');
-                    await new Promise(r => setTimeout(r, 300 + attempt * 200));
-                    continue;
-                }
-                let msg = '写入失败 ' + putRes.status;
-                try { const j = await putRes.json(); msg = j.message || msg; } catch(e) {}
-                throw new Error(msg);
-            }
-            throw lastErr || new Error('写入失败');
-        }
-
 
         async function sha256Hex(text) {
             const data = new TextEncoder().encode(text);
@@ -2073,46 +1519,24 @@
         //  INIT
         // ================================================================
         document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                await Promise.race([
-                    initDB(),
-                    new Promise((r) => setTimeout(r, 2000))
-                ]);
-            } catch (e) { console.warn('initDB', e); }
-            try {
-                await Promise.race([
-                    loadArticles(),
-                    new Promise((r) => setTimeout(r, 10000))
-                ]);
-            } catch (e) {
-                console.warn('loadArticles', e);
-                try {
-                    const res = await fetch('./articles.json?t=' + Date.now());
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (Array.isArray(data)) articles = data;
-                    }
-                } catch (e2) {}
-            }
-            try { loadState(); } catch (e) {}
-            try { initTheme(); } catch (e) {}
-            try { initViews(); } catch (e) {}
-            try { initLogin(); } catch (e) {}
-            try { initArticles(); } catch (e) {}
-            try { initGitHub(); } catch (e) {}
-            try { initMusic(); } catch (e) {}
-            try { initQuote(); } catch (e) {}
-            try { initOptimizations(); } catch (e) {}
-            try { initMarkdownEditor(); } catch (e) {}
-            try { initGuestbook(); } catch (e) {}
-            try { if (typeof initCoverUpload === 'function') initCoverUpload(); } catch (e) {}
-            try { renderHomeRecent(); } catch (e) { console.warn(e); }
-            try { renderArticleList();
-            initTagFilter(); } catch (e) { console.warn(e); }
-            try { renderTimelineList(); } catch (e) {}
-            try { handleRouteHash(); } catch (e) {}
+            await initDB();
+            await loadArticles();
+            loadState();
+            initTheme();
+            initViews();
+            initLogin();
+            initArticles();
+            initGitHub();
+            initMusic();
+            initQuote();
+            initOptimizations();
+            initMarkdownEditor();
+            initGuestbook();
+            renderHomeRecent();
+            renderArticleList();
+            renderTimelineList();
+            handleRouteHash();
             window.addEventListener('hashchange', handleRouteHash);
-            console.log('芸芣苡 · 博客 ready', articles.length);
         });
 
         function handleRouteHash() {
@@ -2151,23 +1575,10 @@
         }
         function dbPut(a) {
             return new Promise((ok, fail) => {
-                try {
-                    if (!db) { ok(); return; }
-                    const tx = db.transaction('articles', 'readwrite');
-                    const store = tx.objectStore('articles');
-                    // 先删后写，确保清除 cover 等字段时旧值不会残留
-                    const delReq = store.delete(a.id);
-                    delReq.onsuccess = () => {
-                        const req = store.put(a);
-                        req.onsuccess = () => ok();
-                        req.onerror = () => fail(req.error);
-                    };
-                    delReq.onerror = () => {
-                        const req = store.put(a);
-                        req.onsuccess = () => ok();
-                        req.onerror = () => fail(req.error);
-                    };
-                } catch (e) { fail(e); }
+                const tx = db.transaction('articles', 'readwrite');
+                const req = tx.objectStore('articles').put(a);
+                req.onsuccess = ok;
+                req.onerror = () => fail(req.error);
             });
         }
         function dbDel(id) {
@@ -2179,91 +1590,54 @@
             });
         }
         async function loadArticles() {
+            // Try to sync with GitHub articles.json first (Cross-device cloud DB)
+            const ghToken = localStorage.getItem('blog_gh_token');
             const owner = 'eliyfy';
             const repo = 'yfy_blog';
-            const urls = [
-                `./articles.json?t=${Date.now()}`,
-                `articles.json?t=${Date.now()}`,
-                `https://eliyfy.github.io/yfy_blog/articles.json?t=${Date.now()}`,
-                `https://raw.githubusercontent.com/${owner}/${repo}/main/articles.json?t=${Date.now()}`
-            ];
-
-            async function fetchArticlesJson() {
-                for (const url of urls) {
-                    try {
-                        const ctrl = new AbortController();
-                        const timer = setTimeout(() => ctrl.abort(), 8000);
-                        const res = await fetch(url, { signal: ctrl.signal, cache: 'no-store' });
-                        clearTimeout(timer);
-                        if (!res.ok) continue;
-                        const data = await res.json();
-                        if (Array.isArray(data)) return data;
-                    } catch (e) {
-                        console.warn('articles fetch fail', url, e && e.message);
-                    }
-                }
-                return null;
-            }
-
-            function idbClearArticles() {
-                return new Promise((resolve) => {
-                    try {
-                        if (!db) return resolve(false);
+            
+            try {
+                // Fetch public json from rawgithub or github pages to ensure any user sees it
+                // We append a timestamp to prevent caching
+                const res = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/main/articles.json?t=${Date.now()}`);
+                if (res.ok) {
+                    const cloudArticles = await res.json();
+                    if (Array.isArray(cloudArticles)) {
+                        // Sync cloud to IndexedDB
+                        // Clear current store first
                         const tx = db.transaction('articles', 'readwrite');
                         const store = tx.objectStore('articles');
-                        const req = store.clear();
-                        let done = false;
-                        const finish = (v) => { if (!done) { done = true; resolve(v); } };
-                        req.onsuccess = () => finish(true);
-                        req.onerror = () => finish(false);
-                        tx.oncomplete = () => finish(true);
-                        tx.onerror = () => finish(false);
-                        setTimeout(() => finish(false), 2500);
-                    } catch (e) {
-                        resolve(false);
-                    }
-                });
-            }
-
-            // 1) 优先拉云端/相对路径 JSON（不依赖 IDB）
-            const cloudArticles = await fetchArticlesJson();
-            if (cloudArticles && cloudArticles.length) {
-                articles = cloudArticles.slice().sort((a, b) => (a.ts || 0) - (b.ts || 0));
-                // 后台尽力同步到 IDB，失败不影响展示
-                try {
-                    if (db) {
-                        await idbClearArticles();
+                        await new Promise((resolve) => {
+                            const req = store.clear();
+                            req.onsuccess = resolve;
+                        });
+                        
+                        // Put all cloud articles into IndexedDB
                         for (const a of cloudArticles) {
-                            try { await dbPut(a); } catch (e) {}
-                        }
-                        console.log('✓ articles synced', articles.length);
-                    }
-                } catch (e) {
-                    console.warn('IDB sync skip', e && e.message);
-                }
-                return;
-            }
-
-            // 2) 回退本地 IDB
-            try {
-                let arr = await dbAll();
-                const old = localStorage.getItem('blog_articles');
-                if (old && (!arr || !arr.length)) {
-                    try {
-                        const oldArr = JSON.parse(old);
-                        for (const a of oldArr) {
-                            if (!a.id) a.id = 'a_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
                             await dbPut(a);
                         }
-                        arr = await dbAll();
-                    } catch (e) {}
+                        console.log("✓ Synchronized articles from GitHub Cloud!");
+                    }
                 }
-                try { localStorage.removeItem('blog_articles'); } catch (e) {}
-                articles = (arr || []).sort((a, b) => (a.ts || 0) - (b.ts || 0));
-            } catch (e) {
-                console.warn('local articles fail', e && e.message);
-                articles = [];
+            } catch(e) {
+                console.log("Cloud sync failed or offline, loading from local IndexedDB:", e.message);
             }
+
+            let arr = await dbAll();
+            // 仅在本地为空时迁移旧 localStorage，避免把已删除文章重新写回
+            const old = localStorage.getItem('blog_articles');
+            if (old && (!arr || !arr.length)) {
+                try {
+                    const oldArr = JSON.parse(old);
+                    for (const a of oldArr) {
+                        if (!a.id) a.id = 'a_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+                        await dbPut(a);
+                    }
+                    arr = await dbAll();
+                } catch(e) {}
+            }
+            // 旧缓存一律清理，防止复活
+            try { localStorage.removeItem('blog_articles'); } catch(e) {}
+            articles = (arr || []).sort((a,b) => a.ts - b.ts);
         }
 
         // ====== 时间线视图 ======
@@ -2303,7 +1677,6 @@
                 html += '</div></div>';
             });
             list.innerHTML = html;
-            hydrateLazyImages(list);
         }
 
         async function syncArticlesToCloud(list) {
@@ -2351,7 +1724,6 @@
                 }
                 await loadArticles();
                 renderArticleList();
-            initTagFilter();
                 renderTimelineList();
                 renderHomeRecent();
                 if (currentView === 'article-detail') switchView('articles');
@@ -2571,7 +1943,6 @@
                 if (currentView === 'toolbox') switchView('home');
             }
             renderArticleList();
-            initTagFilter();
             renderTimelineList();
             renderHomeRecent();
             // 刷新详情页按钮状态
@@ -2636,7 +2007,7 @@
             const container = $('articleList');
             if (!container) return;
             if (!articles.length) {
-                container.innerHTML = '<div class="empty-state"><div class="empty-icon">✎</div>还没有文章<div class="empty-sub">静待第一篇落笔</div></div>';
+                container.innerHTML = '<div class="empty-state">还没有文章</div>';
                 return;
             }
 
@@ -2665,7 +2036,7 @@
                 const realIdx = articles.indexOf(a);
                 const wordCount = (a.content || '').replace(/<[^>]*>/g,'').length;
                 const readMin = Math.max(1, Math.round(wordCount / 400));
-                const excerptText = escHtml(extractExcerpt(a.content, 120));
+                const excerptText = escHtml((a.content || '').replace(/#|\*|`|>|\[|\]/g, '').slice(0, 140)) + '...';
 
                 let adminHtml = '';
                 if (isLoggedIn) {
@@ -2674,21 +2045,18 @@
                         '<span class="danger" onclick="deleteArticleById(\'' + a.id + '\')">删除</span>' +
                         '</div>';
                 }
-                const cover = getArticleCover(a);
-                listHtml += '<article class="art-entry clickable" data-id="' + escHtml(a.id || '') + '" onclick="openArticle(this.dataset.id)">' +
-                    coverImgHtml(cover, '', '') +
-                    '<div class="card-body">' +
-                    '<div class="art-title">' + escHtml(a.title) + '</div>' +
-                    '<div class="art-meta">' + escHtml(a.date || '') + (a.tag ? ' · ' + escHtml(a.tag) : '') + ' · ' + readMin + ' min read</div>' +
-                    '<div class="art-excerpt">' + excerptText + '</div>' +
+                listHtml += '<article class="art-entry" style="padding-bottom:20px; border-bottom:1px solid var(--border); transition:all .2s;">' +
+                    '<div style="font-size:.78rem; color:var(--text-dim); font-family:var(--font-mono); margin-bottom:6px;">' + (a.date || '') + (a.tag ? ' · ' + escHtml(a.tag) : '') + ' · ' + readMin + ' min read</div>' +
+                    '<h2 style="font-size:1.25rem; font-weight:600; color:var(--text); margin-bottom:8px; cursor:pointer;" onclick="openArticle(' + realIdx + ')">' + escHtml(a.title) + '</h2>' +
+                    '<div style="font-size:.9rem; color:var(--text-secondary); line-height:1.6; margin-bottom:12px; cursor:pointer;" onclick="openArticle(' + realIdx + ')">' + excerptText + '</div>' +
+                    '<div><a href="javascript:void(0)" onclick="openArticle(' + realIdx + ')" style="font-size:.85rem; color:var(--accent); text-decoration:none; font-weight:500;">阅读全文 →</a></div>' +
                     adminHtml +
-                    '</div></article>';
+                    '</article>';
             });
             listHtml += '</div>';
 
             container.innerHTML = searchHtml + listHtml;
             bindSearchInput();
-            hydrateLazyImages(container);
         }
 
         function bindSearchInput() {
@@ -2705,277 +2073,25 @@
             }
         }
 
-        
-        function stripMd(md) {
-            return String(md || '')
-                .replace(/```[\s\S]*?```/g, ' ')
-                .replace(/`[^`]*`/g, ' ')
-                .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
-                .replace(/\[[^\]]*\]\([^)]*\)/g, ' ')
-                .replace(/[#>*_~\-]+/g, ' ')
-                .replace(/\s+/g, ' ')
-                .trim();
-        }
-        
-        
-        function initCoverUpload() {
-            const file = $('editCoverFile');
-            const url = $('editCover');
-            const pickBtn = $('editCoverPick');
-            const clearBtn = $('editCoverClear');
-            if (!file || !url) return;
-
-            // 本地上传按钮：真正触发 file input
-            if (pickBtn) {
-                pickBtn.onclick = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    try { file.value = ''; } catch (_) {}
-                    file.click();
-                };
-            }
-            const prevBox = $('editCoverPreview');
-            if (prevBox) {
-                prevBox.onclick = (e) => {
-                    // 点预览区也触发上传
-                    if (e.target && e.target.id === 'editCoverPreviewImg') { /* ok */ }
-                    e.preventDefault();
-                    try { file.value = ''; } catch (_) {}
-                    file.click();
-                };
-            }
-
-            file.onchange = async () => {
-                const f = file.files && file.files[0];
-                if (!f) return;
-                if (!f.type || !f.type.startsWith('image/')) {
-                    toast('请选择图片文件', 'e');
-                    return;
-                }
-                try {
-                    toast('正在处理封面…');
-                    let dataUrl;
-                    if (typeof compressImageFile === 'function') {
-                        dataUrl = await compressImageFile(f, 1280, 0.82);
-                    } else {
-                        dataUrl = await new Promise((resolve, reject) => {
-                            const reader = new FileReader();
-                            reader.onload = () => resolve(reader.result);
-                            reader.onerror = reject;
-                            reader.readAsDataURL(f);
-                        });
-                    }
-                    if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) {
-                        toast('封面处理失败', 'e');
-                        return;
-                    }
-                    // 体积保护：过大则再压一次
-                    if (dataUrl.length > 1200000 && typeof compressImageFile === 'function') {
-                        dataUrl = await compressImageFile(f, 960, 0.72);
-                    }
-                    if (dataUrl.length > 1800000) {
-                        toast('图片太大，请换更小的图或用外链', 'e');
-                        return;
-                    }
-                    url.value = dataUrl;
-                    updateCoverPreview(dataUrl);
-                    toast('封面已选择，记得点保存');
-                } catch (err) {
-                    console.error(err);
-                    toast('读取图片失败: ' + (err.message || err), 'e');
-                }
-            };
-
-            url.oninput = () => updateCoverPreview(url.value.trim());
-
-            if (clearBtn) {
-                clearBtn.onclick = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    url.value = '';
-                    try { file.value = ''; } catch (_) {}
-                    updateCoverPreview('');
-                    toast('已清除封面（保存后生效）');
-                };
-            }
-        }
-
-        function getArticleCover(a) {
-            if (!a) return '';
-            return String(a.cover || a.coverUrl || '').trim();
-        }
-        function coverImgHtml(src, cls, onclick) {
-            if (!src) {
-                return '<div class="cover-thumb-wrap skeleton" style="background:linear-gradient(135deg,var(--bg-soft),var(--border))"></div>';
-            }
-            const oc = onclick ? (' onclick="' + onclick + '"') : '';
-            // 直接带 src + loading=lazy，避免仅 data-src 未 hydrate 时空白
-            return '<div class="cover-thumb-wrap skeleton"' + oc + '>' +
-                '<img class="cover-thumb lazy-img ' + (cls || '') + '" src="' + escHtml(src) + '" data-src="' + escHtml(src) + '" alt="封面" loading="lazy" decoding="async" onload="this.classList.add(\'is-loaded\');this.parentElement&&this.parentElement.classList.remove(\'skeleton\')" onerror="this.style.opacity=0" />' +
-                '</div>';
-        }
-        function hydrateLazyImages(root) {
-            const scope = root || document;
-            const imgs = scope.querySelectorAll('img.lazy-img, img[data-src]');
-            const loadOne = (img) => {
-                const src = img.getAttribute('data-src') || img.getAttribute('src');
-                if (!src) return;
-                if (img.dataset.hydrated === '1') return;
-                img.dataset.hydrated = '1';
-                const done = () => {
-                    img.classList.add('is-loaded');
-                    const wrap = img.closest('.cover-thumb-wrap, .detail-cover-wrap');
-                    if (wrap) wrap.classList.remove('skeleton');
-                };
-                img.addEventListener('load', done, { once: true });
-                img.addEventListener('error', () => {
-                    const wrap = img.closest('.cover-thumb-wrap, .detail-cover-wrap');
-                    if (wrap) wrap.style.display = 'none';
-                }, { once: true });
-                if (img.getAttribute('src') !== src) img.src = src;
-                if (img.complete && img.naturalWidth) done();
-            };
-            if ('IntersectionObserver' in window) {
-                const io = new IntersectionObserver((entries) => {
-                    entries.forEach(en => {
-                        if (en.isIntersecting) {
-                            loadOne(en.target);
-                            io.unobserve(en.target);
-                        }
-                    });
-                }, { rootMargin: '120px 0px', threshold: 0.01 });
-                imgs.forEach(img => {
-                    const rect = img.getBoundingClientRect();
-                    if (rect.top < window.innerHeight + 80) loadOne(img);
-                    else io.observe(img);
-                });
-            } else {
-                imgs.forEach(loadOne);
-            }
-        }
-        function updateCoverPreview(url) {
-            const box = $('editCoverPreview');
-            const img = $('editCoverPreviewImg');
-            const input = $('editCover');
-            if (input && url !== undefined) input.value = url || '';
-            const src = (url !== undefined ? url : ((input && input.value) || '')).trim();
-            if (!box || !img) return;
-            if (!src) {
-                box.classList.remove('has-img');
-                img.removeAttribute('src');
-                return;
-            }
-            img.onload = () => box.classList.add('has-img');
-            img.onerror = () => box.classList.remove('has-img');
-            img.src = src;
-        }
-        function compressImageFile(file, maxSide, quality) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onerror = () => reject(new Error('读取图片失败'));
-                reader.onload = () => {
-                    const img = new Image();
-                    img.onload = () => {
-                        let w = img.width, h = img.height;
-                        const max = maxSide || 1280;
-                        if (w > max || h > max) {
-                            const r = Math.min(max / w, max / h);
-                            w = Math.round(w * r);
-                            h = Math.round(h * r);
-                        }
-                        const canvas = document.createElement('canvas');
-                        canvas.width = w; canvas.height = h;
-                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                        let q = quality || 0.82;
-                        let data = canvas.toDataURL('image/jpeg', q);
-                        while (data.length > 1.6e6 && q > 0.5) {
-                            q -= 0.08;
-                            data = canvas.toDataURL('image/jpeg', q);
-                        }
-                        resolve(data);
-                    };
-                    img.onerror = () => reject(new Error('图片解码失败'));
-                    img.src = reader.result;
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-        function initCoverEditor() { initCoverUpload(); }
-
-        function extractExcerpt(md, n) {
-            const t = stripMd(md);
-            if (!t) return '暂无摘要';
-            return t.length > (n || 72) ? t.slice(0, n || 72) + '…' : t;
-        }
-        function readingMinutes(md) {
-            const t = stripMd(md);
-            const mins = Math.max(1, Math.ceil((t.length || 0) / 400));
-            return mins + ' min';
-        }
-        function applyReadFontSize(delta) {
-            const cur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--read-size')) || 1.05;
-            let next = Math.min(1.35, Math.max(0.9, cur + (delta || 0)));
-            document.documentElement.style.setProperty('--read-size', next + 'rem');
-            localStorage.setItem('blog_read_size', String(next));
-            const label = $('fontSizeLabel');
-            if (label) label.textContent = next < 1 ? '小' : (next > 1.15 ? '大' : '中');
-        }
-        function initReadFontSize() {
-            const saved = parseFloat(localStorage.getItem('blog_read_size') || '');
-            if (saved) document.documentElement.style.setProperty('--read-size', saved + 'rem');
-            const up = $('fontSizeUp'), down = $('fontSizeDown');
-            if (up) up.onclick = () => applyReadFontSize(0.08);
-            if (down) down.onclick = () => applyReadFontSize(-0.08);
-            applyReadFontSize(0);
-        }
-        function initToTop() {
-            const btn = $('toTop');
-            if (!btn) return;
-            const onScroll = () => {
-                if (window.scrollY > 280) btn.classList.add('show');
-                else btn.classList.remove('show');
-            };
-            window.addEventListener('scroll', onScroll, { passive: true });
-            btn.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
-            onScroll();
-        }
-        function tryLoadSiteLogo() {
-            const a = $('siteLogo');
-            const img = $('siteLogoImg');
-            if (!a || !img) return;
-            img.onload = () => a.classList.add('has-logo');
-            // if logo.png exists it will show; otherwise onerror hides
-            img.src = 'logo.png?t=' + Date.now();
-        }
-
-
         function renderHomeRecent() {
             const list = $('homeRecentList');
-            if (!list) return;
             if (!articles.length) {
-                list.innerHTML = '<div class="home-recent-empty"><div class="empty-icon">✎</div>还没有文章<div class="empty-sub">登录后可在「文章」页写下第一篇</div></div>';
+                list.innerHTML = '<div class="home-recent-empty">还没有文章</div>';
                 return;
             }
-            const recent = articles.slice().sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0, 5);
+            const recent = articles.slice(-3).reverse();
             let html = '';
-            recent.forEach((a) => {
-                const id = a.id || '';
-                const tag = a.tag ? '<span class="tag-pill">' + escHtml(a.tag) + '</span>' : '';
-                const mins = readingMinutes(a.content);
-                const cover = getArticleCover(a);
-                html += '<div class="home-recent-item clickable" data-id="' + escHtml(id) + '" onclick="openArticle(this.dataset.id)">' +
-                    coverImgHtml(cover, '', '') +
-                    '<div class="card-body">' +
-                    '<div class="row"><span class="title">' + escHtml(a.title) + '</span><span class="date">' + escHtml(a.date || '') + '</span></div>' +
-                    '<div class="meta">' + tag + '<span>' + mins + ' read</span></div>' +
-                    '<div class="excerpt">' + escHtml(extractExcerpt(a.content, 90)) + '</div>' +
-                    '</div></div>';
+            recent.forEach(a => {
+                const realIdx = articles.indexOf(a);
+                html += '<div class="home-recent-item clickable" onclick="openArticle(' + realIdx + ')">' +
+                    '<span class="title">' + escHtml(a.title) + '</span>' +
+                    '<span class="date">' + a.date + '</span>' +
+                    '</div>';
             });
             list.innerHTML = html;
-            try { hydrateLazyImages(list); } catch (e) {}
         }
 
-        function openArticle(idxOrId) {
+                function openArticle(idxOrId) {
             let a = null;
             if (typeof idxOrId === 'number') {
                 a = articles[idxOrId];
@@ -2986,27 +2102,8 @@
 
             $('detailTitle').textContent = a.title;
             const wordCount = (a.content || '').replace(/<[^>]*>/g, '').length;
-            const readMin = Math.max(1, Math.ceil(wordCount / 400)); const wc = wordCount;
-            $('detailMeta').textContent = (a.tag ? a.tag + '  ·  ' : '') + '发表于 ' + (a.date || '') + '  ·  阅读时长: ' + readMin + ' 分钟';
-
-            const hero = $('articleHero');
-            const heroBg = $('articleHeroBg');
-            const dWrap = $('detailCoverWrap');
-            const dImg = $('detailCoverImg');
-            const csrc = getArticleCover(a);
-            if (hero) {
-                if (csrc) {
-                    hero.classList.remove('no-cover');
-                    if (heroBg) {
-                        heroBg.style.backgroundImage = 'url("' + String(csrc).replace(/"/g, '%22') + '")';
-                    }
-                } else {
-                    hero.classList.add('no-cover');
-                    if (heroBg) heroBg.style.backgroundImage = '';
-                }
-            }
-            if (dWrap) dWrap.style.display = 'none';
-            if (dImg) { dImg.removeAttribute('src'); dImg.removeAttribute('data-src'); }
+            const readMin = Math.max(1, Math.ceil(wordCount / 400));
+            $('detailMeta').textContent = (a.tag ? a.tag + ' · ' : '') + (a.date || '') + ' · ' + readMin + ' min read';
 
             let rawHtml = '';
             if (typeof marked !== 'undefined') {
@@ -3031,15 +2128,6 @@
             }
 
             $('detailContent').innerHTML = tocHtml + tempDiv.innerHTML;
-            $('detailContent').querySelectorAll('img').forEach(img => {
-                if (!img.getAttribute('loading')) img.setAttribute('loading', 'lazy');
-                img.setAttribute('decoding', 'async');
-                img.classList.add('lazy-img');
-                if (img.getAttribute('src') && !img.getAttribute('data-src')) {
-                    img.setAttribute('data-src', img.getAttribute('src'));
-                }
-            });
-            hydrateLazyImages($('detailContent'));
 
             if (typeof hljs !== 'undefined') {
                 $('detailContent').querySelectorAll('pre code').forEach(block => {
@@ -3092,13 +2180,11 @@
                 $('editTitle').value = a.title;
                 $('editTag').value = a.tag || '';
                 $('editContent').value = a.content;
-                updateCoverPreview(getArticleCover(a));
             } else {
                 $('editorTitle').textContent = '写文章';
                 $('editTitle').value = '';
                 $('editTag').value = '';
                 $('editContent').value = '';
-                updateCoverPreview('');
             }
             $('editorModal').classList.add('open');
             setTimeout(() => $('editTitle').focus(), 100);
@@ -3113,25 +2199,14 @@
             const title = $('editTitle').value.trim();
             const tag = $('editTag').value.trim();
             const content = $('editContent').value.trim();
-            const cover = (($('editCover') && $('editCover').value) || '').trim();
 
             if (!title || !content) { toast('请填写标题和内容', 'e'); return; }
-            if (cover.startsWith('data:') && cover.length > 1800000) {
-                toast('封面体积过大，请换更小图片或用外链', 'e'); return;
-            }
 
             const id = editingId !== null ? articles[editingId].id : 'a_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
             const ts = editingId !== null ? articles[editingId].ts : Date.now();
             const date = editingId !== null ? articles[editingId].date : new Date().toISOString().split('T')[0];
 
-            const prevArt = (editingId !== null) ? articles[editingId] : null;
-            const a = {
-                id, title, tag, content, ts, date,
-                // 始终写入 cover：空字符串表示清除，避免旧封面“复活”
-                cover: cover || ''
-            };
-            // 去掉空 cover 字段，云端/本地都表示无封面
-            if (!a.cover) delete a.cover;
+            const a = { id, title, tag, content, ts, date };
 
             try {
                 await dbPut(a);
@@ -3144,16 +2219,9 @@
                 
                 if (token) {
                     toast('正在同步至 GitHub 云端...');
-                    // 用内存 + 本次保存结果构建列表，确保清除封面会写进云端
-                    let allArr = [];
-                    try { allArr = await dbAll(); } catch (_) { allArr = articles.slice(); }
-                    // 覆盖本次编辑的那条（防止 IDB 旧 cover 残留）
-                    const map = new Map();
-                    (allArr || []).forEach(x => { if (x && x.id) map.set(x.id, x); });
-                    map.set(a.id, a);
-                    allArr = Array.from(map.values()).sort((x, y) => x.ts - y.ts);
-                    // 同步内存
-                    articles = allArr.slice();
+                    // Reload all articles to get the latest list to push
+                    let allArr = await dbAll();
+                    allArr = allArr.sort((x, y) => x.ts - y.ts);
                     
                     const filePath = 'articles.json';
                     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
@@ -3199,28 +2267,12 @@
                 } else {
                     toast('本地保存成功！(连结 GitHub 后可全自动同步云端)');
                 }
-
-                // 先写内存，避免 loadArticles 从云端拉回旧封面
-                {
-                    const idx = articles.findIndex(x => x.id === a.id);
-                    if (idx >= 0) articles[idx] = a;
-                    else articles.push(a);
-                    articles = articles.slice().sort((x, y) => x.ts - y.ts);
-                }
-
+                
                 closeEditor();
-                try {
-                    // 有 token 时云端已更新；再拉一次。无 token 时跳过云端，保留本地清除结果
-                    const hasTok = !!(typeof getGHToken === 'function' ? getGHToken() : null) || localStorage.getItem('blog_gh_token') || localStorage.getItem('github_token');
-                    if (hasTok) await loadArticles();
-                } catch (_) {}
+                await loadArticles();
                 renderArticleList();
-            initTagFilter();
                 renderHomeRecent();
                 renderTimelineList();
-                if (currentView === 'article-detail' || (location.hash || '').includes('article/')) {
-                    try { openArticle(a.id); } catch (_) {}
-                }
             } catch(e) {
                 toast('操作失败: ' + e.message, 'e');
             }
@@ -3278,13 +2330,12 @@
 
 
         // ================================================================
-        //  GUESTBOOK SYSTEM (GitHub JSON Storage — 访客可写)
+        //  GUESTBOOK SYSTEM (GitHub JSON Storage)
         // ================================================================
         let messages = [];
 
         function initGuestbook() {
-            const btn = $('msgSubmitBtn');
-            if (btn) btn.addEventListener('click', submitMessage);
+            $('msgSubmitBtn').addEventListener('click', submitMessage);
             loadMessages();
         }
 
@@ -3299,9 +2350,7 @@
                     list.innerHTML = '<div style="font-size:.82rem;color:var(--text-dim);padding:8px 0">暂无留言，快来抢沙发吧~</div>';
                     return;
                 }
-                if (!res.ok) throw new Error('load ' + res.status);
-                const data = await res.json();
-                messages = Array.isArray(data) ? data : [];
+                messages = await res.json();
                 renderMessages();
             } catch (e) {
                 list.innerHTML = '<div style="font-size:.82rem;color:var(--text-dim);padding:8px 0">暂无留言，快来抢沙发吧~</div>';
@@ -3310,56 +2359,52 @@
 
         function renderMessages() {
             const list = $('guestbookList');
-            if (!list) return;
-            if (!messages.length) {
+            if (!list || !messages.length) {
                 list.innerHTML = '<div style="font-size:.82rem;color:var(--text-dim);padding:8px 0">暂无留言，快来抢沙发吧~</div>';
                 return;
             }
             let html = '';
             messages.slice().reverse().forEach(m => {
                 const nick = escHtml(m.nick || '匿名网友');
-                const raw = m.content || '';
-                const contentHtml = (typeof marked !== 'undefined')
-                    ? marked.parse(raw, { breaks: true })
-                    : escHtml(raw).replace(/\n/g, '<br>');
+                const contentHtml = typeof marked !== 'undefined' ? marked.parse(m.content) : escHtml(m.content);
                 const date = m.date || '';
-                const avatar = 'https://api.dicebear.com/7.x/identicon/svg?seed=' + encodeURIComponent(m.avatar || m.nick || 'guest');
-                const emailHtml = (isLoggedIn && m.email)
-                    ? '<span class="comment-email">📧 ' + escHtml(m.email) + '</span>'
-                    : '';
-                const delHtml = isLoggedIn
-                    ? '<span class="comment-del" style="margin-left:10px;cursor:pointer" data-mid="' + escHtml(m.id || '') + '" onclick="delGuestbookMessage(this.dataset.mid)">删除</span>'
-                    : '';
-
-                html += '<div class="reveal" style="display:flex;gap:14px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:16px;">' +
-                    '<img src="' + avatar + '" style="width:36px;height:36px;border-radius:50%;background:var(--bg-soft);border:1px solid var(--border);" />' +
-                    '<div style="flex:1;">' +
-                    '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;flex-wrap:wrap;gap:4px;">' +
-                    '<span style="font-weight:500;font-size:.88rem;color:var(--text);">' + nick + emailHtml + delHtml + '</span>' +
-                    '<span style="font-size:.72rem;color:var(--text-dim);font-family:var(--font-mono);">' + escHtml(date) + '</span>' +
+                const avatar = 'https://api.dicebear.com/7.x/identicon/svg?seed=' + encodeURIComponent(m.avatar || nick);
+                
+                html += '<div class="reveal" style="display: flex; gap: 14px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 16px;">' +
+                    '<img loading="lazy" src="' + avatar + '" style="width: 36px; height: 36px; border-radius: 50%; background: var(--bg-soft); border: 1px solid var(--border);" />' +
+                    '<div style="flex: 1;">' +
+                    '<div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">' +
+                    '<span style="font-weight: 500; font-size: .88rem; color: var(--text);">' + nick + '</span>' +
+                    '<span style="font-size: .72rem; color: var(--text-dim); font-family: var(--font-mono);">' + date + '</span>' +
                     '</div>' +
-                    '<div class="markdown-body comment-body" style="font-size:.85rem;line-height:1.6;color:var(--text-secondary);">' + contentHtml + '</div>' +
-                    '</div></div>';
+                    '<div class="markdown-body" style="font-size: .85rem; line-height: 1.6; color: var(--text-secondary);">' + contentHtml + '</div>' +
+                    '</div>' +
+                    '</div>';
             });
             list.innerHTML = html;
-            if (typeof initScrollReveal === 'function') initScrollReveal();
+            initScrollReveal();
         }
 
         async function submitMessage() {
-            const nick = ($('msgNick') && $('msgNick').value || '').trim();
-            const email = ($('msgEmail') && $('msgEmail').value || '').trim();
-            const avatar = ($('msgAvatar') && $('msgAvatar').value || '').trim();
-            const content = ($('msgContent') && $('msgContent').value || '').trim();
-
+            const nick = $('msgNick').value.trim();
+            const avatar = $('msgAvatar').value.trim();
+            const content = $('msgContent').value.trim();
+            
             if (!nick) { toast('请输入你的昵称~', 'e'); return; }
             if (!content) { toast('请写下你的留言正文~', 'e'); return; }
-            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                toast('邮箱格式不正确', 'e'); return;
-            }
-
+            
             const btn = $('msgSubmitBtn');
-            if (btn) { btn.disabled = true; btn.textContent = '提交中...'; }
-
+            btn.disabled = true;
+            btn.textContent = '提交中...';
+            
+            const t = getGHToken();
+            if (!t) {
+                toast('Token未就绪，无法同步到云端', 'e');
+                btn.disabled = false;
+                btn.textContent = '提交留言';
+                return;
+            }
+            
             const d = new Date();
             const dateStr = d.getFullYear() + '-' +
                 String(d.getMonth()+1).padStart(2,'0') + '-' +
@@ -3368,53 +2413,62 @@
                 String(d.getMinutes()).padStart(2,'0');
 
             const newMsg = {
-                id: 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
                 nick: nick,
-                email: email || '',
                 avatar: avatar,
                 content: content,
-                date: dateStr,
-                ts: Date.now()
+                date: dateStr
             };
-
+            
+            const updatedMessages = [...messages, newMsg];
+            
             try {
-                const updated = await putJsonToGitHub('guestbook.json', (remote) => {
-                    const arr = Array.isArray(remote) ? remote.slice() : [];
-                    arr.push(newMsg);
-                    return arr;
-                }, 'guestbook: 来自 ' + nick + ' 的新留言');
-                messages = updated;
-                if ($('msgContent')) $('msgContent').value = '';
-                if ($('msgEmail')) $('msgEmail').value = '';
-                renderMessages();
-                toast('留言成功，已同步云端！');
+                const repo = 'eliyfy/yfy_blog';
+                const fileRes = await fetch('https://api.github.com/repos/' + repo + '/contents/guestbook.json', {
+                    headers: { 'Authorization': 'token ' + t }
+                });
+                
+                let sha = null;
+                if (fileRes.status === 200) {
+                    const fileData = await fileRes.json();
+                    sha = fileData.sha;
+                }
+                
+                const putBody = {
+                    message: '留言板：来自 ' + nick + ' 的新留言',
+                    content: btoa(unescape(encodeURIComponent(JSON.stringify(updatedMessages, null, 2)))),
+                    branch: 'main'
+                };
+                if (sha) putBody.sha = sha;
+                
+                const putRes = await fetch('https://api.github.com/repos/' + repo + '/contents/guestbook.json', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'token ' + t,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/vnd.github+json'
+                    },
+                    body: JSON.stringify(putBody)
+                });
+                
+                if (putRes.status === 200 || putRes.status === 201) {
+                    toast('留言成功，已同步云端！');
+                    $('msgContent').value = '';
+                    messages = updatedMessages;
+                    renderMessages();
+                } else {
+                    const errData = await putRes.json();
+                    toast('留言失败: ' + (errData.message || '未知错误'), 'e');
+                }
             } catch (e) {
-                toast('留言失败: ' + (e.message || e), 'e');
+                toast('网络异常: ' + e.message, 'e');
             } finally {
-                if (btn) { btn.disabled = false; btn.textContent = '提交留言'; }
+                btn.disabled = false;
+                btn.textContent = '提交留言';
             }
         }
-
-        async function delGuestbookMessage(id) {
-            if (!isLoggedIn) return;
-            if (!id) return;
-            if (!confirm('删除这条留言？')) return;
-            try {
-                const updated = await putJsonToGitHub('guestbook.json', (remote) => {
-                    const arr = Array.isArray(remote) ? remote.slice() : [];
-                    return arr.filter(m => m.id !== id);
-                }, 'guestbook: 删除留言 ' + id);
-                messages = updated;
-                renderMessages();
-                toast('已删除');
-            } catch (e) {
-                toast('删除失败: ' + (e.message || e), 'e');
-            }
-        }
-        window.delGuestbookMessage = delGuestbookMessage;
 
         // ================================================================
-//  MUSIC PLAYER  (Meting 多源：搜索 + 默认歌单)
+        //  MUSIC PLAYER  (Meting 多源：搜索 + 默认歌单)
         // ================================================================
         const METING_ENDPOINTS = [
             'https://api.qijieya.cn/meting/',
@@ -3491,18 +2545,9 @@
         window.delTimelineArticle = delTimelineArticle;
         window.switchView = switchView;
 
-        
-        function syncPlayerCollapsedClass() {
-            try {
-                const wrap = $('playerWrap');
-                document.body.classList.toggle('player-collapsed', !!(wrap && wrap.classList.contains('collapsed')));
-            } catch (e) {}
-        }
-
         function initMusic() {
             audio = new Audio();
-            const _vol = parseFloat(localStorage.getItem('blog_music_vol') || '0.6');
-            audio.volume = isNaN(_vol) ? 0.6 : Math.min(1, Math.max(0, _vol));
+            audio.volume = 0.6;
             audio.preload = 'metadata';
             audio.crossOrigin = 'anonymous';
 
@@ -3539,7 +2584,7 @@
             });
 
             $('playerToggle').addEventListener('click', () => {
-                $('playerWrap').classList.toggle('collapsed'); syncPlayerCollapsedClass();
+                $('playerWrap').classList.toggle('collapsed');
                 $('playerToggle').textContent = $('playerWrap').classList.contains('collapsed') ? '>' : '<';
             });
 
@@ -3710,18 +2755,12 @@
                     if (cached) siteDefaultMusic = JSON.parse(cached);
                 }
             } catch (e) {}
-            if (siteDefaultMusic) {
-                if ((!siteDefaultMusic.url || !String(siteDefaultMusic.url).trim()) && siteDefaultMusic.id) {
-                    siteDefaultMusic.url = 'https://api.qijieya.cn/meting/?server=netease&type=url&id=' + encodeURIComponent(siteDefaultMusic.id);
-                }
-            }
             if (siteDefaultMusic && siteDefaultMusic.url) {
                 songs.push({
                     name: siteDefaultMusic.name || '默认音乐',
                     artist: siteDefaultMusic.artist || '',
                     url: siteDefaultMusic.url,
                     id: siteDefaultMusic.id || '',
-                    pic: siteDefaultMusic.pic || '',
                     pic: ''
                 });
             }
@@ -3763,16 +2802,9 @@
             if (idx < 0) idx = musicPlaylist.length - 1;
             if (idx >= musicPlaylist.length) idx = 0;
             musicIndex = idx;
-            try { localStorage.setItem('blog_music_idx', String(idx)); } catch(e) {}
             const song = musicPlaylist[idx];
             $('songName').textContent = song.name;
             $('artistName').textContent = song.artist;
-            const failEl = $('playerFail'); if (failEl) failEl.classList.remove('show');
-            const cover = $('playerCover');
-            if (cover) {
-                if (song.pic || song.cover) { cover.src = song.pic || song.cover; cover.classList.add('show'); }
-                else { cover.removeAttribute('src'); cover.classList.remove('show'); }
-            }
             $('progressBar').style.width = '0%';
 
             try {
@@ -4026,188 +3058,7 @@
             updateHlTheme();
         }
 
-        
-
-
-        // 代码块复制按钮
-        function initCopyCode() {
-            document.querySelectorAll('pre code').forEach(block => {
-                const pre = block.parentElement;
-                if (pre.querySelector('.copy-btn')) return;
-                const btn = document.createElement('button');
-                btn.className = 'copy-btn';
-                btn.textContent = '复制';
-                pre.style.position = 'relative';
-                pre.appendChild(btn);
-                btn.addEventListener('click', async () => {
-                    try {
-                        await navigator.clipboard.writeText(block.textContent);
-                        btn.textContent = '✓ 已复制';
-                        setTimeout(() => { btn.textContent = '复制'; }, 2000);
-                    } catch { btn.textContent = '失败'; }
-                });
-            });
-        }
-        // 监听动态内容
-        const copyObserver = new MutationObserver(() => initCopyCode());
-        copyObserver.observe(document.body, { childList: true, subtree: true });
-
-
-        // 图片Lightbox
-        function initLightbox() {
-            document.querySelectorAll('.art-content img, .gh-editor-preview img').forEach(img => {
-                if (img.closest('.cover-img-box') || img.dataset.lbox) return;
-                img.dataset.lbox = '1';
-                img.style.cursor = 'zoom-in';
-                img.addEventListener('click', () => {
-                    const overlay = document.createElement('div');
-                    overlay.className = 'lightbox-overlay';
-                    overlay.innerHTML = '<span class="lightbox-close">&times;</span><img src="' + htm.encode(img.src) + '" class="lightbox-img" onclick="event.stopPropagation()">';
-                    overlay.addEventListener('click', () => overlay.remove());
-                    document.body.appendChild(overlay);
-                    requestAnimationFrame(() => overlay.classList.add('show'));
-                });
-            });
-        }
-        const lboxObserver = new MutationObserver(() => initLightbox());
-        lboxObserver.observe(document.body, { childList: true, subtree: true });
-
-
-        // 分享
-        function initShare() {
-            const btn = document.getElementById('shareBtn');
-            if (!btn) return;
-            btn.addEventListener('click', () => {
-                const url = window.location.href;
-                const title = document.title;
-                if (navigator.share) {
-                    navigator.share({ title, url }).catch(() => {});
-                } else {
-                    const panel = document.getElementById('sharePanel');
-                    if (panel) {
-                        panel.classList.toggle('show');
-                        return;
-                    }
-                    // fallback: copy link
-                    navigator.clipboard.writeText(url).then(() => toast('链接已复制'));
-                }
-            });
-        }
-
-
-        // 在 detailMeta 追加字数
-        function updateWordCount() {
-            const meta = document.getElementById('detailMeta');
-            if (!meta || meta.dataset.wc) return;
-            const a = articles.find(a => a.id === currentArticleId);
-            if (!a) return;
-            const wc = (a.content || '').replace(/<[^>]*>/g, '').length;
-            meta.textContent += ' · ' + wc + ' 字';
-            meta.dataset.wc = '1';
-        }
-
-
-        // 不蒜子访问统计
-        function initBusuanzi() {
-            const script = document.createElement('script');
-            script.src = '//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js';
-            script.async = true;
-            script.setAttribute('data-no-inject', 'true');
-            document.head.appendChild(script);
-        }
-
-
-        // 自动保存草稿
-        let autoSaveTimer = null;
-        function initAutoSave() {
-            const title = document.getElementById('editTitle');
-            const content = document.getElementById('editContent');
-            const tag = document.getElementById('editTag');
-            if (!title || !content) return;
-            const save = () => {
-                const d = { title: title.value, content: content.value, tag: tag ? tag.value : '', ts: Date.now() };
-                localStorage.setItem('blog_draft', JSON.stringify(d));
-            };
-            ['input', 'change'].forEach(ev => {
-                title.addEventListener(ev, save);
-                if (content) content.addEventListener(ev, save);
-                if (tag) tag.addEventListener(ev, save);
-            });
-            // 恢复
-            try {
-                const d = JSON.parse(localStorage.getItem('blog_draft'));
-                if (d && d.ts && Date.now() - d.ts < 86400000) {
-                    if (!title.value && d.title) title.value = d.title;
-                    if (content && !content.value && d.content) content.value = d.content;
-                    if (tag && !tag.value && d.tag) tag.value = d.tag;
-                }
-            } catch(e) {}
-        }
-
-
-        // 访客IP地理定位
-        let visitorLocation = null;
-        async function getVisitorLocation() {
-            if (visitorLocation) return visitorLocation;
-            try {
-                const ctrl = new AbortController();
-                const timer = setTimeout(() => ctrl.abort(), 5000);
-                const res = await fetch('https://ip-api.com/json/?lang=zh-CN', { signal: ctrl.signal });
-                clearTimeout(timer);
-                if (!res.ok) return null;
-                const data = await res.json();
-                if (data.status === 'success') {
-                    visitorLocation = data.city + (data.regionName && data.regionName !== data.city ? ', ' + data.regionName : '') + (data.country ? ' · ' + data.country : '');
-                    return visitorLocation;
-                }
-            } catch(e) {}
-            return null;
-        }
-        // 修改留言提交，附上位置
-        const origSubmitComment = window.submitComment;
-        // 在 submitMessage 和 submitComment 里调用 getVisitorLocation
-
-
-        // 标签云
-        function renderTagCloud() {
-            const container = document.getElementById('tagCloud');
-            if (!container || !articles.length) return;
-            const tags = {};
-            articles.forEach(a => {
-                const t = (a.tag || '').split(/[,，]/).map(s => s.trim()).filter(Boolean);
-                t.forEach(tag => { tags[tag] = (tags[tag] || 0) + 1; });
-            });
-            const entries = Object.entries(tags).sort((a,b) => b[1] - a[1]);
-            if (!entries.length) { container.innerHTML = '<div class="empty-sub">暂无标签</div>'; return; }
-            const max = entries[0][1];
-            container.innerHTML = entries.map(([tag, count]) => {
-                const size = 0.75 + (count / max) * 0.55;
-                return '<span class="tag-cloud-item" style="font-size:' + size.toFixed(2) + 'rem" onclick="switchView(\'articles\');setTimeout(()=>{const inp=document.getElementById(\'articleSearchInput\');if(inp){inp.value=\'' + htm.escape(tag) + '\';inp.dispatchEvent(new Event(\'input\'))}},100)">' + htm.escape(tag) + '<sup>' + count + '</sup></span>';
-            }).join(' ');
-        }
-
-
-        // 性能优化：延迟非关键资源
-        function initPerf() {
-            // 延迟加载highlight.js
-            const hl = document.querySelector('link[href*="highlight"]');
-            if (hl) hl.setAttribute('media', 'print');
-            // 标记已加载
-            document.documentElement.classList.add('loaded');
-            // 延迟广告/统计等
-            setTimeout(() => {
-                const hl = document.querySelector('link[href*="highlight"]');
-                if (hl) hl.setAttribute('media', 'all');
-            }, 3000);
-        }
-
-function initOptimizations() {
-            initAutoSave();
-            initCopyCode();
-            initLightbox();
-            initShare();
-            initBusuanzi();
-            initPerf();
+        function initOptimizations() {
             initStickyHeader();
             initBackToTop();
             initScrollReveal();
@@ -4269,7 +3120,7 @@ function initOptimizations() {
                 const charCount = text.length;
                 const wordCount = text.trim() === '' ? 0 : text.replace(/<[^>]*>/g, '').length;
                 const lines = text.split('\n').length;
-                const readMin = Math.max(1, Math.ceil(wordCount / 400)); const wc = wordCount;
+                const readMin = Math.max(1, Math.ceil(wordCount / 400));
                 wordCountSpan.textContent = charCount + ' chars | ' + lines + ' lines';
                 readTimeSpan.textContent = 'Est. Read Time: ~' + readMin + ' min';
             }
@@ -4384,47 +3235,34 @@ function initOptimizations() {
         }
 
         // ================================================================
-        //  COMMENTS (文章留言：访客可写 + Markdown + 可选邮箱)
+        //  COMMENTS
         // ================================================================
         let comments = [];
         let currentCommentArticleId = null;
 
-        function renderMarkdownSafe(text) {
-            const raw = text || '';
-            try {
-                if (typeof marked !== 'undefined') {
-                    return marked.parse(raw, { breaks: true });
-                }
-            } catch (e) {}
-            return escHtml(raw).replace(/\n/g, '<br>');
-        }
-
         async function loadComments(articleId) {
             currentCommentArticleId = articleId;
-            comments = [];
+            // Sync from cloud first
             try {
-                const res = await fetch('https://raw.githubusercontent.com/eliyfy/yfy_blog/main/comments.json?t=' + Date.now());
+                const res = await fetch(`https://raw.githubusercontent.com/eliyfy/yfy_blog/main/comments.json?t=${Date.now()}`);
                 if (res.ok) {
                     const cloud = await res.json();
                     if (Array.isArray(cloud)) {
-                        // 以云端为准合并本地
+                        // Merge into local DB (only keep new cloud comments)
                         for (const c of cloud) {
-                            try { await dbPutComment(c); } catch (e) {}
+                            // Only store comments for current article
+                            if (c.articleId === articleId) {
+                                await dbPutComment(c);
+                            }
                         }
-                        comments = cloud.filter(c => c.articleId === articleId)
-                            .sort((a, b) => (a.ts || 0) - (b.ts || 0));
                     }
                 }
-            } catch (e) {
-                console.log('Comment cloud load failed:', e.message);
+            } catch(e) {
+                console.log('Comment cloud sync failed:', e.message);
             }
-            if (!comments.length) {
-                try {
-                    const all = await dbAllComments();
-                    comments = all.filter(c => c.articleId === articleId)
-                        .sort((a, b) => (a.ts || 0) - (b.ts || 0));
-                } catch (e) {}
-            }
+            // Load from local DB
+            const all = await dbAllComments();
+            comments = all.filter(c => c.articleId === articleId);
             renderComments();
         }
 
@@ -4437,21 +3275,17 @@ function initOptimizations() {
             }
             let html = '';
             comments.forEach(c => {
-                const d = new Date(c.ts || Date.now());
+                const d = new Date(c.ts);
                 const dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-                const name = c.name || '访客';
-                const emailHtml = (isLoggedIn && c.email)
-                    ? '<span class="comment-email">📧 ' + escHtml(c.email) + '</span>'
-                    : '';
                 html += '<div class="comment-item">';
                 html += '<div class="comment-meta">';
-                html += '<span class="comment-avatar">' + escHtml(String(name).charAt(0) || '?') + '</span>';
-                html += '<strong>' + escHtml(name) + '</strong>' + emailHtml;
+                html += '<span class="comment-avatar">' + escHtml(c.name.charAt(0)) + '</span>';
+                html += '<strong>' + escHtml(c.name) + '</strong>';
                 html += '<span class="comment-date">' + dateStr + '</span>';
                 html += '</div>';
-                html += '<div class="comment-body markdown-body">' + renderMarkdownSafe(c.text) + '</div>';
+                html += '<div class="comment-body">' + escHtml(c.text) + '</div>';
                 if (isLoggedIn) {
-                    html += '<div class="comment-actions"><span class="comment-del" data-cid="' + escHtml(c.id) + '" onclick="delComment(this.dataset.cid)">删除</span></div>';
+                    html += '<div class="comment-actions"><span class="comment-del" data-cid="' + c.id + '" onclick="delComment(this.dataset.cid)">删除</span></div>';
                 }
                 html += '</div>';
             });
@@ -4460,79 +3294,77 @@ function initOptimizations() {
 
         async function submitComment() {
             const nameInput = $('commentName');
-            const emailInput = $('commentEmail');
             const textInput = $('commentText');
-            const name = (nameInput && nameInput.value || '').trim();
-            const email = (emailInput && emailInput.value || '').trim();
-            const text = (textInput && textInput.value || '').trim();
+            const name = nameInput.value.trim();
+            const text = textInput.value.trim();
             if (!name || !text) { toast('请填写昵称和留言内容', 'e'); return; }
-            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                toast('邮箱格式不正确', 'e'); return;
-            }
-            if (!currentCommentArticleId) { toast('请先打开一篇文章', 'e'); return; }
+            if (!currentCommentArticleId) return;
 
             const c = {
                 id: 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
                 articleId: currentCommentArticleId,
                 name: name,
-                email: email || '',
                 text: text,
                 ts: Date.now()
             };
 
             try {
-                // 先写本地，立即显示
-                try { await dbPutComment(c); } catch (e) {}
+                await dbPutComment(c);
                 comments.push(c);
                 renderComments();
-                if (textInput) textInput.value = '';
-                if (emailInput) emailInput.value = '';
-                toast('正在同步到云端…');
+                textInput.value = '';
+                toast('留言已保存');
 
-                // 云端：拉取合并后写回，保证跨设备可见
-                const updated = await putJsonToGitHub('comments.json', (remote) => {
-                    const arr = Array.isArray(remote) ? remote.slice() : [];
-                    // 合并本地全部 + 新评论
-                    const map = {};
-                    arr.forEach(x => { if (x && x.id) map[x.id] = x; });
-                    map[c.id] = c;
-                    return Object.values(map).sort((a, b) => (a.ts || 0) - (b.ts || 0));
-                }, 'comments: ' + name + ' 评论了文章');
-
-                // 刷新当前文章评论
-                comments = updated.filter(x => x.articleId === currentCommentArticleId)
-                    .sort((a, b) => (a.ts || 0) - (b.ts || 0));
-                // 同步写回本地库
-                for (const item of updated) {
-                    try { await dbPutComment(item); } catch (e) {}
+                // Try to sync to cloud if logged in
+                const token = (typeof getGHToken === 'function' ? getGHToken() : null) || localStorage.getItem('blog_gh_token') || localStorage.getItem('github_token');
+                if (token) {
+                    syncCommentsToCloud(token);
                 }
-                renderComments();
-                toast('留言已同步到 GitHub');
-            } catch (e) {
-                toast('云端同步失败: ' + (e.message || e) + '（本地已暂存）', 'e');
+            } catch(e) {
+                toast('留言保存失败', 'e');
             }
         }
 
         async function delComment(id) {
             if (!confirm('删除此留言？')) return;
-            try { await dbDelComment(id); } catch (e) {}
+            await dbDelComment(id);
             comments = comments.filter(c => c.id !== id);
             renderComments();
+            toast('已删除');
+            const token = (typeof getGHToken === 'function' ? getGHToken() : null) || localStorage.getItem('blog_gh_token') || localStorage.getItem('github_token');
+            if (token) syncCommentsToCloud(token);
+        }
+
+        async function syncCommentsToCloud(token) {
             try {
-                await putJsonToGitHub('comments.json', (remote) => {
-                    const arr = Array.isArray(remote) ? remote.slice() : [];
-                    return arr.filter(c => c.id !== id);
-                }, 'comments: 删除 ' + id);
-                toast('已删除并同步云端');
-            } catch (e) {
-                toast('已删除本地，云端同步失败: ' + (e.message || e), 'e');
+                // Gather all comments from DB
+                const allComments = await dbAllComments();
+                const apiUrl = 'https://api.github.com/repos/eliyfy/yfy_blog/contents/comments.json';
+                let sha = null;
+                try {
+                    const getRes = await fetch(apiUrl, { headers: { 'Authorization': `token ${token}` } });
+                    if (getRes.ok) {
+                        const getData = await getRes.json();
+                        sha = getData.sha;
+                    }
+                } catch(e) {}
+                const fileContent = btoa(unescape(encodeURIComponent(JSON.stringify(allComments, null, 2))));
+                const body = { message: 'Sync comments [skip ci]', content: fileContent, branch: 'main' };
+                if (sha) body.sha = sha;
+                await fetch(apiUrl, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                console.log('✓ Comments synced to cloud');
+            } catch(e) {
+                console.log('Comment sync failed:', e.message);
             }
         }
 
         // ====== Comment IndexedDB helpers ======
         function dbAllComments() {
             return new Promise((ok, fail) => {
-                if (!db) return ok([]);
                 const tx = db.transaction('comments', 'readonly');
                 const req = tx.objectStore('comments').getAll();
                 req.onsuccess = () => ok(req.result || []);
@@ -4541,7 +3373,6 @@ function initOptimizations() {
         }
         function dbPutComment(c) {
             return new Promise((ok, fail) => {
-                if (!db) return ok();
                 const tx = db.transaction('comments', 'readwrite');
                 const req = tx.objectStore('comments').put(c);
                 req.onsuccess = ok;
@@ -4550,7 +3381,6 @@ function initOptimizations() {
         }
         function dbDelComment(id) {
             return new Promise((ok, fail) => {
-                if (!db) return ok();
                 const tx = db.transaction('comments', 'readwrite');
                 const req = tx.objectStore('comments').delete(id);
                 req.onsuccess = ok;
@@ -4558,20 +3388,20 @@ function initOptimizations() {
             });
         }
 
-        window.submitComment = submitComment;
-        window.delComment = delComment;
-        window.loadComments = loadComments;
-
         console.log('芸芣苡 · 博客 loaded');
     </script>
     <button id="backToTop" title="回到顶部">↑</button>
     <div id="imgLightbox"><span class="lb-close">&times;</span><img id="lbImg" src="" alt="" /></div>
-    <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-    <span id="busuanzi_container_site_pv" style="display:none">本站总访问 <span id="busuanzi_value_site_pv"></span> 次</span>
-    
-    <div class="lightbox-overlay" id="lightboxOverlay">
-        <span class="lightbox-close" id="lightboxClose">&times;</span>
-        <img id="lightboxImg" src="" alt="" />
-    </div>
-    </body>
+
+<div id="lightboxOverlay" class="lightbox-overlay" onclick="closeLightbox()"><button class="lb-close" onclick="closeLightbox()">✕</button><img id="lightboxImg" src="" alt=""></div>
+
+<div id="shortcutsOverlay" class="shortcuts-overlay" onclick="closeShortcutsPanel()"></div>
+<div id="shortcutsPanel" class="shortcuts-panel">
+  <h3>⌨️ 快捷键</h3>
+  <div class="ks-row"><span>回顶</span><span class="ks-key"><kbd>t</kbd></span></div>
+  <div class="ks-row"><span>关闭弹窗/返回</span><span class="ks-key"><kbd>Esc</kbd></span></div>
+  <div class="ks-row"><span>上/下篇文章</span><span class="ks-key"><kbd>j</kbd> / <kbd>k</kbd></span></div>
+  <div class="ks-row"><span>此快捷键面板</span><span class="ks-key"><kbd>?</kbd></span></div>
+</div>
+</body>
 </html>

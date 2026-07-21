@@ -14,7 +14,8 @@
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="favicon.svg" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js" defer></script>
+    <link rel="alternate" type="application/atom+xml" title="芸芣苡" href="feed.xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Inter:opsz@14..32&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -913,6 +914,158 @@
         img.lazy-img { opacity: 0; transition: opacity .35s ease; }
         img.lazy-img.is-loaded { opacity: 1; }
 
+        
+        let autoSaveTimer = null;
+        function initAutoSave() {
+            const title = document.getElementById('editTitle');
+            const tag = document.getElementById('editTag');
+            const content = document.getElementById('editContent');
+            if (!title || !content) return;
+            const save = () => {
+                const draft = { title: title.value, tag: tag?tag.value:'', content: content.value, ts: Date.now() };
+                try { localStorage.setItem('blog_draft', JSON.stringify(draft)); } catch(e) {}
+            };
+            if (autoSaveTimer) clearInterval(autoSaveTimer);
+            autoSaveTimer = setInterval(save, 15000);
+        }
+        function restoreDraft() {
+            try {
+                const raw = localStorage.getItem('blog_draft');
+                if (!raw) return;
+                const draft = JSON.parse(raw);
+                const t=document.getElementById('editTitle'), g=document.getElementById('editTag'), c=document.getElementById('editContent');
+                if(t&&draft.title)t.value=draft.title; if(g&&draft.tag)g.value=draft.tag; if(c&&draft.content)c.value=draft.content;
+            } catch(e) {}
+        }
+        function clearDraft() { try { localStorage.removeItem('blog_draft'); } catch(e) {} }
+        const origOE3 = openEditor;
+        openEditor = function(idx) { origOE3(idx); if(idx===undefined||idx===null){setTimeout(()=>{restoreDraft();initAutoSave();},100);} };
+        const origSA3 = saveArticle;
+        saveArticle = async function() { await origSA3.call(this,...arguments); clearDraft(); };
+
+        
+        let visitorIP = null;
+        async function getVisitorIP() {
+            try {
+                const ctrl = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), 5000);
+                const res = await fetch('https://ip-api.com/json/?fields=query,city,region,country,isp', { signal: ctrl.signal });
+                clearTimeout(timer);
+                if (!res.ok) return;
+                visitorIP = await res.json();
+            } catch(e) {}
+        }
+        const origSM2 = submitMessage;
+        submitMessage = async function() {
+            if (visitorIP) {
+                const ta = document.getElementById('msgText');
+                if (ta) ta.dataset.ip = JSON.stringify(visitorIP);
+            }
+            return origSM2(...arguments);
+        };
+        const origSC2 = submitComment;
+        submitComment = async function() {
+            if (visitorIP) {
+                const ta = document.getElementById('commentText');
+                if (ta) ta.dataset.ip = JSON.stringify(visitorIP);
+            }
+            return origSC2(...arguments);
+        };
+        getVisitorIP();
+
+
+        .tag-filter-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+        .tag-filter-bar span { padding:4px 14px; border-radius:20px; font-size:.78rem;
+            border:1px solid var(--border); cursor:pointer; color:var(--text-secondary);
+            background:var(--bg-card); transition:all .15s; user-select:none; }
+        .tag-filter-bar span:hover { border-color:var(--accent); color:var(--text); }
+        .tag-filter-bar span.active { background:var(--accent); color:var(--bg); border-color:var(--accent); }
+
+        
+        function initTagFilter() {
+            const bar = document.getElementById('tagFilterBar');
+            if (!bar) return;
+            bar.addEventListener('click', (e) => {
+                const span = e.target.closest('span');
+                if (!span) return;
+                bar.querySelectorAll('span').forEach(s => s.classList.remove('active'));
+                span.classList.add('active');
+                renderArticleList(span.dataset.tag || '');
+            });
+        }
+
+
+        .code-wrap { position: relative; }
+        .code-copy-btn {
+            position: absolute; top: 6px; right: 6px; z-index: 2;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 6px; width: 28px; height: 28px;
+            font-size: .75rem; cursor: pointer; opacity: 0;
+            transition: opacity .15s; color: var(--text-secondary);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .code-wrap:hover .code-copy-btn { opacity: 1; }
+        .code-copy-btn:hover { background: var(--bg-soft); color: var(--text); }
+        .code-copy-btn.copied { opacity: 1; color: #22c55e; }
+
+        
+        function initCopyCode() {
+            document.querySelectorAll('pre code').forEach((block) => {
+                const pre = block.parentElement;
+                if (pre.classList.contains('code-wrap')) return;
+                pre.classList.add('code-wrap');
+                const btn = document.createElement('button');
+                btn.className = 'code-copy-btn'; btn.textContent = '📋'; btn.title = '复制代码';
+                btn.addEventListener('click', async () => {
+                    try { await navigator.clipboard.writeText(block.textContent);
+                        btn.textContent = '✓'; btn.classList.add('copied');
+                        setTimeout(() => { btn.textContent = '📋'; btn.classList.remove('copied'); }, 1800); }
+                    catch(e) { btn.textContent = '✗'; setTimeout(() => btn.textContent = '📋', 1200); }
+                });
+                pre.appendChild(btn);
+            });
+        }
+
+
+        .lightbox-overlay { position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.85); display:flex;
+            align-items:center; justify-content:center; opacity:0; pointer-events:none;
+            transition:opacity .25s ease; cursor:zoom-out; }
+        .lightbox-overlay.open { opacity:1; pointer-events:auto; }
+        .lightbox-overlay img { max-width:92vw; max-height:92vh; object-fit:contain; border-radius:4px; box-shadow:0 8px 40px rgba(0,0,0,.4); }
+        .lightbox-close { position:absolute; top:18px; right:18px; color:rgba(255,255,255,.7); font-size:1.8rem; cursor:pointer; line-height:1; }
+        .lightbox-close:hover { color:#fff; }
+
+        
+        function initLightbox() {
+            const overlay = document.getElementById('lightboxOverlay');
+            const img = document.getElementById('lightboxImg');
+            if (!overlay || !img) return;
+            const close = document.getElementById('lightboxClose');
+            const pics = document.querySelectorAll('.art-content img, .gh-editor-preview img');
+            const handle = (el) => { el.style.cursor = 'zoom-in'; el.addEventListener('click', (e) => { e.stopPropagation(); img.src = el.src; overlay.classList.add('open'); }); };
+            pics.forEach(handle);
+            close.addEventListener('click', () => overlay.classList.remove('open'));
+            overlay.addEventListener('click', () => overlay.classList.remove('open'));
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') overlay.classList.remove('open'); });
+        }
+
+        
+        function initShareBtn() {
+            const btn = document.getElementById('shareBtn');
+            if (!btn) return;
+            btn.addEventListener('click', async () => {
+                const url = window.location.href;
+                const title = document.title || '芸芣苡';
+                if (navigator.share) { try { await navigator.share({ title, url }); return; } catch(e) {} }
+                try { await navigator.clipboard.writeText(url); btn.textContent = '✓ 已复制'; setTimeout(() => btn.textContent = '↗ 分享', 2000); }
+                catch(e) { prompt('复制链接:', url); }
+            });
+        }
+
+        
+        const origOA = openArticle;
+        openArticle = function(id) { origOA(id); setTimeout(() => { initLightbox(); initCopyCode(); initShareBtn(); }, 300); };
+
         /* ===== Paper scholar UX polish ===== */
         .art-entry {
             padding: 18px 16px !important;
@@ -1492,6 +1645,7 @@
                 </span>
                 <span id="detailAdminActions" style="display:none; margin-left:auto; gap:8px;">
                     <button class="btn btn-sm" id="detailEditBtn" type="button">编辑</button>
+                    <button class="btn btn-sm btn-outline" id="shareBtn" type="button" style="font-size:.75rem;">↗ 分享</button>
                     <button class="btn btn-sm btn-outline" id="detailDeleteBtn" type="button">删除</button>
                 </span>
             </div>
@@ -1715,7 +1869,7 @@
         <button class="player-toggle" id="playerToggle" title="折叠"><</button>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <script>
         // ================================================================
         //  CONFIG
@@ -1882,7 +2036,8 @@
             try { initGuestbook(); } catch (e) {}
             try { if (typeof initCoverUpload === 'function') initCoverUpload(); } catch (e) {}
             try { renderHomeRecent(); } catch (e) { console.warn(e); }
-            try { renderArticleList(); } catch (e) { console.warn(e); }
+            try { renderArticleList();
+            initTagFilter(); } catch (e) { console.warn(e); }
             try { renderTimelineList(); } catch (e) {}
             try { handleRouteHash(); } catch (e) {}
             window.addEventListener('hashchange', handleRouteHash);
@@ -2125,6 +2280,7 @@
                 }
                 await loadArticles();
                 renderArticleList();
+            initTagFilter();
                 renderTimelineList();
                 renderHomeRecent();
                 if (currentView === 'article-detail') switchView('articles');
@@ -2344,6 +2500,7 @@
                 if (currentView === 'toolbox') switchView('home');
             }
             renderArticleList();
+            initTagFilter();
             renderTimelineList();
             renderHomeRecent();
             // 刷新详情页按钮状态
@@ -2987,6 +3144,7 @@
                     if (hasTok) await loadArticles();
                 } catch (_) {}
                 renderArticleList();
+            initTagFilter();
                 renderHomeRecent();
                 renderTimelineList();
                 if (currentView === 'article-detail' || (location.hash || '').includes('article/')) {
@@ -4156,5 +4314,12 @@
     </script>
     <button id="backToTop" title="回到顶部">↑</button>
     <div id="imgLightbox"><span class="lb-close">&times;</span><img id="lbImg" src="" alt="" /></div>
-</body>
+    <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span id="busuanzi_container_site_pv" style="display:none">本站总访问 <span id="busuanzi_value_site_pv"></span> 次</span>
+    
+    <div class="lightbox-overlay" id="lightboxOverlay">
+        <span class="lightbox-close" id="lightboxClose">&times;</span>
+        <img id="lightboxImg" src="" alt="" />
+    </div>
+    </body>
 </html>

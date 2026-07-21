@@ -3463,12 +3463,18 @@
                     if (cached) siteDefaultMusic = JSON.parse(cached);
                 }
             } catch (e) {}
+            if (siteDefaultMusic) {
+                if ((!siteDefaultMusic.url || !String(siteDefaultMusic.url).trim()) && siteDefaultMusic.id) {
+                    siteDefaultMusic.url = 'https://api.qijieya.cn/meting/?server=netease&type=url&id=' + encodeURIComponent(siteDefaultMusic.id);
+                }
+            }
             if (siteDefaultMusic && siteDefaultMusic.url) {
                 songs.push({
                     name: siteDefaultMusic.name || '默认音乐',
                     artist: siteDefaultMusic.artist || '',
                     url: siteDefaultMusic.url,
                     id: siteDefaultMusic.id || '',
+                    pic: siteDefaultMusic.pic || '',
                     pic: ''
                 });
             }

@@ -1,23 +1,21 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-    <title>芸芣苡</title>
-    <subtitle>载其见兮</subtitle>
-    <link href="https://eliyfy.github.io/yfy_blog/"/>
-    <link rel="self" href="https://eliyfy.github.io/yfy_blog/feed.xml"/>
-    <updated>Tue, 21 Jul 2026 15:13:17 +0000</updated>
-    <author><name>芸芣苡</name></author>
-    <id>tag:yfy_blog</id>
-    <entry>
-        <title>你好，世界 —— 新博客启航</title>
-        <link href="https://eliyfy.github.io/yfy_blog/#article/a_17001"/>
-        <id>tag:yfy_blog,2025-07-20:a_17001</id>
-        <published>Sun, 14 Jul 2024 23:33:20 +0000</published>
-        <updated>Sun, 14 Jul 2024 23:33:20 +0000</updated>
-        <summary type="html"><![CDATA[## 为什么写博客
+  <title>yfy_blog</title>
+  <link href="https://eliyfy.github.io/yfy_blog/" rel="self" type="application/atom+xml"/>
+  <link href="https://eliyfy.github.io/yfy_blog/"/>
+  <updated>2026-07-21T18:22:39Z</updated>
+  <id>tag:eliyfy.github.io,2026:yfy_blog</id>
+  <author><name>eliyfy</name></author>
+  <entry>
+    <title>你好，世界 —— 新博客启航</title>
+    <link href="https://eliyfy.github.io/yfy_blog/#/article/a_17001"/>
+    <id>tag:eliyfy.github.io,2026:a_17001</id>
+    <updated>2026-07-21T18:22:39Z</updated>
+    <summary type="text">## 为什么写博客
 
 一直以来都想有个自己的地方写点东西。技术笔记也好，生活感悟也好，哪怕只是几行随手的思考。
 
-> 「写作是为了让人理解，而不仅仅是表达。」
+&gt; 「写作是为了让人理解，而不仅仅是表达。」
 
 ## 关于这个博客
 
@@ -28,8 +26,6 @@
 - ⏱ 时间线视图
 - 📖 独立文章页面
 
-以后会陆续更新技术文章和生活记录。
-
-欢迎常来看看 👋]]></summary>
-    </entry>
+以后会陆续更新技术文章和</summary>
+  </entry>
 </feed>

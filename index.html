@@ -2366,7 +2366,7 @@
                         '</div>';
                 }
                 const cover = getArticleCover(a);
-                listHtml += '<article class="art-entry clickable" onclick="openArticle(\\'' + (a.id || '') + '\\')">' +
+                listHtml += '<article class="art-entry clickable" data-id="' + escHtml(a.id || '') + '" onclick="openArticle(this.dataset.id)">' +
                     coverImgHtml(cover, '', '') +
                     '<div class="card-body">' +
                     '<div class="art-title">' + escHtml(a.title) + '</div>' +
@@ -2643,7 +2643,7 @@
                 const tag = a.tag ? '<span class="tag-pill">' + escHtml(a.tag) + '</span>' : '';
                 const mins = readingMinutes(a.content);
                 const cover = getArticleCover(a);
-                html += '<div class="home-recent-item clickable" onclick="openArticle(\'' + id + '\')">' +
+                html += '<div class="home-recent-item clickable" data-id="' + escHtml(id) + '" onclick="openArticle(this.dataset.id)">' +
                     coverImgHtml(cover, '', '') +
                     '<div class="card-body">' +
                     '<div class="row"><span class="title">' + escHtml(a.title) + '</span><span class="date">' + escHtml(a.date || '') + '</span></div>' +

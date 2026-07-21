@@ -1540,7 +1540,7 @@
                         <button type="button" class="btn-outline btn-sm" id="editCoverPick">本地上传</button>
                         <button type="button" class="btn-outline btn-sm" id="editCoverClear">清除</button>
                     </div>
-                    <div class="cover-preview-box" id="editCoverPreview"><span>暂无封面预览</span><img id="editCoverPreviewImg" alt="封面预览" /></div>
+                    <div class="cover-preview-box" id="editCoverPreview" title="点击选择本地图片" style="cursor:pointer"><span>暂无封面预览</span><img id="editCoverPreviewImg" alt="封面预览" /></div>
                     <div class="cover-hint">支持图片链接，或本地上传（自动压缩）。首页/列表/详情显示，并启用懒加载。</div>
                 </div>
             </div>
@@ -1857,10 +1857,23 @@
         }
         function dbPut(a) {
             return new Promise((ok, fail) => {
-                const tx = db.transaction('articles', 'readwrite');
-                const req = tx.objectStore('articles').put(a);
-                req.onsuccess = ok;
-                req.onerror = () => fail(req.error);
+                try {
+                    if (!db) { ok(); return; }
+                    const tx = db.transaction('articles', 'readwrite');
+                    const store = tx.objectStore('articles');
+                    // 先删后写，确保清除 cover 等字段时旧值不会残留
+                    const delReq = store.delete(a.id);
+                    delReq.onsuccess = () => {
+                        const req = store.put(a);
+                        req.onsuccess = () => ok();
+                        req.onerror = () => fail(req.error);
+                    };
+                    delReq.onerror = () => {
+                        const req = store.put(a);
+                        req.onsuccess = () => ok();
+                        req.onerror = () => fail(req.error);
+                    };
+                } catch (e) { fail(e); }
             });
         }
         function dbDel(id) {
@@ -2412,47 +2425,82 @@
         function initCoverUpload() {
             const file = $('editCoverFile');
             const url = $('editCover');
-            const prev = $('editCoverPreview');
+            const pickBtn = $('editCoverPick');
             const clearBtn = $('editCoverClear');
-            if (file) {
-                file.addEventListener('change', () => {
-                    const f = file.files && file.files[0];
-                    if (!f) return;
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                        const img = new Image();
-                        img.onload = () => {
-                            const max = 1280;
-                            let w = img.width, h = img.height;
-                            if (w > max || h > max) {
-                                const r = Math.min(max / w, max / h);
-                                w = Math.round(w * r); h = Math.round(h * r);
-                            }
-                            const c = document.createElement('canvas');
-                            c.width = w; c.height = h;
-                            c.getContext('2d').drawImage(img, 0, 0, w, h);
-                            const data = c.toDataURL('image/jpeg', 0.82);
-                            if (url) url.value = data;
-                            if (prev) { prev.src = data; prev.style.display = 'block'; }
-                        };
-                        img.src = reader.result;
-                    };
-                    reader.readAsDataURL(f);
-                });
+            if (!file || !url) return;
+
+            // 本地上传按钮：真正触发 file input
+            if (pickBtn) {
+                pickBtn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    try { file.value = ''; } catch (_) {}
+                    file.click();
+                };
             }
-            if (url && prev) {
-                url.addEventListener('input', () => {
-                    const v = url.value.trim();
-                    if (v) { prev.src = v; prev.style.display = 'block'; }
-                    else { prev.removeAttribute('src'); prev.style.display = 'none'; }
-                });
+            const prevBox = $('editCoverPreview');
+            if (prevBox) {
+                prevBox.onclick = (e) => {
+                    // 点预览区也触发上传
+                    if (e.target && e.target.id === 'editCoverPreviewImg') { /* ok */ }
+                    e.preventDefault();
+                    try { file.value = ''; } catch (_) {}
+                    file.click();
+                };
             }
+
+            file.onchange = async () => {
+                const f = file.files && file.files[0];
+                if (!f) return;
+                if (!f.type || !f.type.startsWith('image/')) {
+                    toast('请选择图片文件', 'e');
+                    return;
+                }
+                try {
+                    toast('正在处理封面…');
+                    let dataUrl;
+                    if (typeof compressImageFile === 'function') {
+                        dataUrl = await compressImageFile(f, 1280, 0.82);
+                    } else {
+                        dataUrl = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = () => resolve(reader.result);
+                            reader.onerror = reject;
+                            reader.readAsDataURL(f);
+                        });
+                    }
+                    if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) {
+                        toast('封面处理失败', 'e');
+                        return;
+                    }
+                    // 体积保护：过大则再压一次
+                    if (dataUrl.length > 1200000 && typeof compressImageFile === 'function') {
+                        dataUrl = await compressImageFile(f, 960, 0.72);
+                    }
+                    if (dataUrl.length > 1800000) {
+                        toast('图片太大，请换更小的图或用外链', 'e');
+                        return;
+                    }
+                    url.value = dataUrl;
+                    updateCoverPreview(dataUrl);
+                    toast('封面已选择，记得点保存');
+                } catch (err) {
+                    console.error(err);
+                    toast('读取图片失败: ' + (err.message || err), 'e');
+                }
+            };
+
+            url.oninput = () => updateCoverPreview(url.value.trim());
+
             if (clearBtn) {
-                clearBtn.addEventListener('click', () => {
-                    if (url) url.value = '';
-                    if (file) file.value = '';
-                    if (prev) { prev.removeAttribute('src'); prev.style.display = 'none'; }
-                });
+                clearBtn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    url.value = '';
+                    try { file.value = ''; } catch (_) {}
+                    updateCoverPreview('');
+                    toast('已清除封面（保存后生效）');
+                };
             }
         }
 
@@ -2556,31 +2604,7 @@
                 reader.readAsDataURL(file);
             });
         }
-        function initCoverEditor() {
-            const pick = $('editCoverPick');
-            const file = $('editCoverFile');
-            const clear = $('editCoverClear');
-            const input = $('editCover');
-            if (pick && file) {
-                pick.onclick = () => file.click();
-                file.onchange = async () => {
-                    const f = file.files && file.files[0];
-                    if (!f) return;
-                    if (f.size > 8 * 1024 * 1024) { toast('图片太大，请小于 8MB', 'e'); return; }
-                    try {
-                        toast('压缩封面中…');
-                        const data = await compressImageFile(f, 1400, 0.8);
-                        updateCoverPreview(data);
-                        toast('封面已就绪');
-                    } catch (e) {
-                        toast('封面处理失败: ' + e.message, 'e');
-                    }
-                    file.value = '';
-                };
-            }
-            if (clear) clear.onclick = () => updateCoverPreview('');
-            if (input) input.addEventListener('input', () => updateCoverPreview(input.value.trim()));
-        }
+        function initCoverEditor() { initCoverUpload(); }
 
         function extractExcerpt(md, n) {
             const t = stripMd(md);
@@ -2805,8 +2829,14 @@
             const ts = editingId !== null ? articles[editingId].ts : Date.now();
             const date = editingId !== null ? articles[editingId].date : new Date().toISOString().split('T')[0];
 
-            const a = { id, title, tag, content, ts, date };
-            if (cover) a.cover = cover;
+            const prevArt = (editingId !== null) ? articles[editingId] : null;
+            const a = {
+                id, title, tag, content, ts, date,
+                // 始终写入 cover：空字符串表示清除，避免旧封面“复活”
+                cover: cover || ''
+            };
+            // 去掉空 cover 字段，云端/本地都表示无封面
+            if (!a.cover) delete a.cover;
 
             try {
                 await dbPut(a);
@@ -2819,9 +2849,16 @@
                 
                 if (token) {
                     toast('正在同步至 GitHub 云端...');
-                    // Reload all articles to get the latest list to push
-                    let allArr = await dbAll();
-                    allArr = allArr.sort((x, y) => x.ts - y.ts);
+                    // 用内存 + 本次保存结果构建列表，确保清除封面会写进云端
+                    let allArr = [];
+                    try { allArr = await dbAll(); } catch (_) { allArr = articles.slice(); }
+                    // 覆盖本次编辑的那条（防止 IDB 旧 cover 残留）
+                    const map = new Map();
+                    (allArr || []).forEach(x => { if (x && x.id) map.set(x.id, x); });
+                    map.set(a.id, a);
+                    allArr = Array.from(map.values()).sort((x, y) => x.ts - y.ts);
+                    // 同步内存
+                    articles = allArr.slice();
                     
                     const filePath = 'articles.json';
                     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
@@ -2867,12 +2904,27 @@
                 } else {
                     toast('本地保存成功！(连结 GitHub 后可全自动同步云端)');
                 }
-                
+
+                // 先写内存，避免 loadArticles 从云端拉回旧封面
+                {
+                    const idx = articles.findIndex(x => x.id === a.id);
+                    if (idx >= 0) articles[idx] = a;
+                    else articles.push(a);
+                    articles = articles.slice().sort((x, y) => x.ts - y.ts);
+                }
+
                 closeEditor();
-                await loadArticles();
+                try {
+                    // 有 token 时云端已更新；再拉一次。无 token 时跳过云端，保留本地清除结果
+                    const hasTok = !!(typeof getGHToken === 'function' ? getGHToken() : null) || localStorage.getItem('blog_gh_token') || localStorage.getItem('github_token');
+                    if (hasTok) await loadArticles();
+                } catch (_) {}
                 renderArticleList();
                 renderHomeRecent();
                 renderTimelineList();
+                if (currentView === 'article-detail' || (location.hash || '').includes('article/')) {
+                    try { openArticle(a.id); } catch (_) {}
+                }
             } catch(e) {
                 toast('操作失败: ' + e.message, 'e');
             }

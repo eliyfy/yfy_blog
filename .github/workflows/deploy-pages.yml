@@ -24,28 +24,53 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Inject admin secrets into index.html
+      - name: Prepare site and inject secrets
         env:
           ADMIN_USER: ${{ secrets.ADMIN_USER }}
           ADMIN_PASS_HASH: ${{ secrets.ADMIN_PASS_HASH }}
           BLOG_GH_TOKEN: ${{ secrets.BLOG_GH_TOKEN }}
         run: |
           python3 <<'PY'
-          import os, pathlib
-          p = pathlib.Path('index.html')
+          import os, pathlib, shutil
+          root = pathlib.Path('.')
+          site = pathlib.Path('_site')
+          if site.exists():
+              shutil.rmtree(site)
+          site.mkdir()
+          keep = [
+              'index.html','404.html','feed.xml','favicon.svg','og-cover.svg',
+              'articles.json','comments.json','guestbook.json','site-config.json',
+              'covers','ADMIN_SETUP.md'
+          ]
+          for name in keep:
+              src = root / name
+              if not src.exists():
+                  continue
+              dst = site / name
+              if src.is_dir():
+                  shutil.copytree(src, dst)
+              else:
+                  shutil.copy2(src, dst)
+          p = site / 'index.html'
           html = p.read_text(encoding='utf-8')
-          user = os.environ.get('ADMIN_USER') or 'admin'
-          h = os.environ.get('ADMIN_PASS_HASH') or '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9'
+          user = os.environ.get('ADMIN_USER') or ''
+          h = os.environ.get('ADMIN_PASS_HASH') or ''
           token = os.environ.get('BLOG_GH_TOKEN') or ''
           def esc(s):
               return s.replace('\\', '\\\\').replace("'", "\\'")
-          html = html.replace('%%ADMIN_USER%%', esc(user))
-          html = html.replace('%%ADMIN_PASS_HASH%%', esc(h))
-          html = html.replace('%%BLOG_GH_TOKEN%%', esc(token))
+          before = html.count('%%')
+          if user:
+              html = html.replace('%%ADMIN_USER%%', esc(user))
+          if h:
+              html = html.replace('%%ADMIN_PASS_HASH%%', esc(h))
+          if token:
+              html = html.replace('%%BLOG_GH_TOKEN%%', esc(token))
           p.write_text(html, encoding='utf-8')
-          print('Injected ADMIN_USER=', user)
-          print('Injected PASS_HASH length=', len(h))
-          print('Injected TOKEN length=', len(token))
+          after = html.count('%%')
+          print('placeholders before/after', before, after)
+          print('Injected USER', bool(user), 'HASH', len(h), 'TOKEN', len(token))
+          if '%%BLOG_GH_TOKEN%%' in html and token:
+              raise SystemExit('token placeholder not replaced')
           PY
 
       - name: Setup Pages
@@ -54,7 +79,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment

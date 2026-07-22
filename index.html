@@ -2219,8 +2219,8 @@
         // 管理员配置：由 GitHub Actions 从 Secrets 注入（不要在源码写明文密码）
         // Secrets: ADMIN_USER / ADMIN_PASS_HASH / BLOG_GH_TOKEN
         const ADMIN_CFG = {
-            user: '%%ADMIN_USER%%',
-            passHash: '%%ADMIN_PASS_HASH%%',
+            user: 'eli',
+            passHash: '2c871b07575f444f77dc370cbf970825692bbf8d78eacceeafd7936e40deccdb',
             // 登录后自动写入，用于文章/默认音乐云端同步（可在 Secrets 注入替换）
             ghToken: '%%BLOG_GH_TOKEN%%'
         };

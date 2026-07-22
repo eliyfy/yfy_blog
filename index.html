@@ -687,131 +687,89 @@
         }
 
         /* ===== 留言评论 ===== */
-        .comment-section {
-            margin-top: 40px;
-            padding-top: 28px;
-            border-top: 2px solid var(--border);
+        .comment-section { margin-top: 40px; padding-top: 28px; border-top: 2px solid var(--border); }
+        .comment-section h3 { font-size: 1.15rem; margin-bottom: 20px; color: var(--text); font-weight: 600; }
+        .comment-form { display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
+        .comment-form-row { display: flex; gap: 12px; }
+        .comment-form-row input, .comment-form textarea {
+            width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px;
+            background: var(--bg-card); color: var(--text); font-size: .9rem; font-family: inherit;
         }
-        .comment-section h3 {
-            font-size: 1.15rem;
-            margin-bottom: 20px;
-            color: var(--text);
-            font-weight: 600;
-        }
-        .comment-form {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 28px;
-        }
-        .comment-form-row {
-            display: flex;
-            gap: 12px;
-        }
-        .comment-form-row input {
-            flex: 1;
-            padding: 10px 14px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: var(--bg-card);
-            color: var(--text);
-            font-size: .9rem;
-        }
-        .comment-form textarea {
-            width: 100%;
-            min-height: 80px;
-            padding: 12px 14px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: var(--bg-card);
-            color: var(--text);
-            font-size: .9rem;
-            resize: vertical;
-            font-family: inherit;
-        }
-        .comment-form-row input:focus,
-        .comment-form textarea:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
-        .comment-submit-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .comment-list {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        .comment-item {
-            background: var(--bg-card);
-            border-radius: 10px;
-            padding: 16px 20px;
-            border: 1px solid var(--border);
-        }
-        .comment-meta {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
-        }
-        .comment-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: var(--accent);
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: .8rem;
-            font-weight: 600;
-            flex-shrink: 0;
-        }
-        .comment-meta strong {
-            font-size: .9rem;
-            color: var(--text);
-        }
-        .comment-date {
-            font-size: .78rem;
-            color: var(--text-dim);
-            margin-left: auto;
-        }
-        .comment-body {
-            font-size: .92rem;
-            line-height: 1.6;
-            color: var(--text-secondary);
-        }
-        .comment-actions {
-            margin-top: 8px;
-        }
-        .comment-del {
-            font-size: .78rem;
-            color: var(--text-dim);
-            cursor: pointer;
-        }
+        .comment-form-row input { flex: 1; }
+        .comment-form textarea { min-height: 80px; resize: vertical; }
+        .comment-form-row input:focus, .comment-form textarea:focus { outline: none; border-color: var(--accent); }
+        .comment-submit-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .comment-list { display: flex; flex-direction: column; gap: 16px; }
+        .comment-item { background: var(--bg-card); border-radius: 10px; padding: 16px 20px; border: 1px solid var(--border); }
+        .comment-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .comment-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: .8rem; font-weight: 600; flex-shrink: 0; }
+        .comment-meta strong { font-size: .9rem; color: var(--text); }
+        .comment-date { font-size: .78rem; color: var(--text-dim); margin-left: auto; }
+        .comment-body { font-size: .92rem; line-height: 1.6; color: var(--text-secondary); }
+        .comment-actions { margin-top: 8px; }
+        .comment-del { font-size: .78rem; color: var(--text-dim); cursor: pointer; }
         .comment-del:hover { color: var(--accent); }
-        .comment-email {
-            font-size: .72rem; color: var(--text-dim); margin-left: 6px;
-        }
-        .comment-body.markdown-body {
-            font-size: .88rem; line-height: 1.7; color: var(--text-secondary);
-        }
+        .comment-email { font-size: .72rem; color: var(--text-dim); margin-left: 6px; }
+        .comment-body.markdown-body { font-size: .88rem; line-height: 1.7; color: var(--text-secondary); }
         .comment-body.markdown-body p { margin: 0 0 .5em; }
         .comment-body.markdown-body p:last-child { margin-bottom: 0; }
         .comment-body.markdown-body a { color: var(--accent); }
-        .comment-body.markdown-body code {
-            font-family: var(--font-mono); font-size: .85em;
-            background: var(--bg-soft); padding: 1px 5px; border-radius: 3px;
-        }
-        .comment-body.markdown-body pre {
-            background: var(--bg-soft); padding: 10px; border-radius: 6px; overflow: auto;
-        }
-        .comment-form-hint {
-            font-size: .72rem; color: var(--text-dim); margin-top: 4px;
-        }
+        .comment-body.markdown-body code { font-family: var(--font-mono); font-size: .85em; background: var(--bg-soft); padding: 1px 5px; border-radius: 3px; }
+        .comment-body.markdown-body pre { background: var(--bg-soft); padding: 10px; border-radius: 6px; overflow: auto; }
+        .comment-form-hint { font-size: .72rem; color: var(--text-dim); margin-top: 4px; }
 
+        /* ===== 留言板优化 ===== */
+        .guestbook-shell { max-width: 760px; }
+        .guestbook-intro { margin-bottom: 20px; color: var(--text-secondary); font-size: .9rem; line-height: 1.75; }
+        .guest-form-card { margin-bottom: 26px; background: color-mix(in srgb, var(--bg-card) 82%, transparent); border: 1px solid var(--border); border-radius: 14px; padding: 20px; box-shadow: var(--shadow-soft); }
+        .guest-form-title { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
+        .guest-form-title h3 { margin:0; font-size:.98rem; font-weight:600; color:var(--text); }
+        .guest-form-title span { font-size:.74rem; color:var(--text-dim); }
+        .guest-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+        .guest-input, .guest-textarea { width:100%; border:1px solid var(--border); border-radius:10px; background:var(--bg); color:var(--text); font:inherit; font-size:.86rem; transition:border-color .15s, box-shadow .15s, background .15s; }
+        .guest-input { padding:10px 12px; }
+        .guest-textarea { min-height:116px; padding:12px 14px; resize:vertical; line-height:1.7; margin-top:10px; }
+        .guest-input:focus, .guest-textarea:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent); background:var(--bg-card); }
+        .guest-honeypot { position:absolute !important; left:-9999px !important; width:1px !important; height:1px !important; opacity:0 !important; pointer-events:none !important; }
+        .guest-meta-row { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-top:8px; }
+        .guest-tabs { display:flex; gap:6px; }
+        .guest-tab { border:1px solid var(--border); background:var(--bg); color:var(--text-secondary); border-radius:999px; padding:4px 10px; font-size:.75rem; cursor:pointer; }
+        .guest-tab.active { background:var(--accent); color:var(--bg); border-color:var(--accent); }
+        .guest-counter { font-size:.72rem; color:var(--text-dim); font-family:var(--font-mono); }
+        .guest-preview { display:none; margin-top:10px; padding:12px 14px; border:1px dashed var(--border); border-radius:10px; background:var(--bg-soft); min-height:72px; }
+        .guest-preview.show { display:block; }
+        .guest-actions { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:14px; }
+        .guest-hint { font-size:.74rem; color:var(--text-dim); line-height:1.6; }
+        .guest-list { display:flex; flex-direction:column; gap:14px; }
+        .guest-state { border:1px dashed var(--border); border-radius:12px; padding:22px; text-align:center; color:var(--text-dim); background:var(--bg-soft); font-size:.86rem; line-height:1.8; }
+        .guest-card { display:grid; grid-template-columns:42px 1fr; gap:14px; border:1px solid var(--border); border-radius:14px; background:var(--bg-card); padding:16px; box-shadow:var(--shadow-soft); }
+        .guest-avatar { width:42px; height:42px; border-radius:50%; border:1px solid var(--border); background:var(--bg-soft); overflow:hidden; flex-shrink:0; }
+        .guest-avatar img { width:100%; height:100%; display:block; }
+        .guest-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:6px; }
+        .guest-author { display:flex; flex-wrap:wrap; align-items:center; gap:6px; min-width:0; }
+        .guest-author strong { color:var(--text); font-size:.9rem; }
+        .guest-badge { font-size:.66rem; color:var(--text-dim); border:1px solid var(--border); border-radius:999px; padding:1px 7px; }
+        .guest-time { color:var(--text-dim); font-family:var(--font-mono); font-size:.72rem; white-space:nowrap; }
+        .guest-body { color:var(--text-secondary); font-size:.88rem; line-height:1.75; overflow-wrap:anywhere; }
+        .guest-body p { margin:0 0 .55em; }
+        .guest-body p:last-child { margin-bottom:0; }
+        .guest-body blockquote { margin:8px 0; padding-left:12px; border-left:3px solid var(--border); color:var(--text-dim); }
+        .guest-body ul, .guest-body ol { padding-left:20px; margin:8px 0; }
+        .guest-body code { font-family:var(--font-mono); font-size:.84em; background:var(--bg-soft); padding:1px 5px; border-radius:4px; }
+        .guest-body pre { background:var(--bg-soft); padding:10px; border-radius:8px; overflow:auto; }
+        .guest-admin { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+        .guest-admin button { border:1px solid var(--border); background:var(--bg); color:var(--text-dim); border-radius:999px; padding:3px 9px; font-size:.72rem; cursor:pointer; }
+        .guest-admin button:hover { color:var(--accent); border-color:var(--accent); }
+        .guest-admin .danger:hover { color:#b91c1c; border-color:#ef4444; }
+        .guest-admin-email { font-size:.72rem; color:var(--text-dim); margin-top:6px; font-family:var(--font-mono); }
+        @media (max-width: 640px) {
+            .comment-form-row, .guest-grid { grid-template-columns:1fr; flex-direction:column; }
+            .guest-form-card { padding:16px; }
+            .guest-card { grid-template-columns:36px 1fr; gap:12px; padding:14px; }
+            .guest-avatar { width:36px; height:36px; }
+            .guest-head { flex-direction:column; gap:3px; }
+            .guest-time { white-space:normal; }
+        }
 
         .music-modal .search-row { display:flex; gap:8px; margin:12px 0; }
         .music-modal .search-row input {
@@ -914,219 +872,7 @@
         img.lazy-img { opacity: 0; transition: opacity .35s ease; }
         img.lazy-img.is-loaded { opacity: 1; }
 
-        
-        let autoSaveTimer = null;
-        function initAutoSave() {
-            const title = document.getElementById('editTitle');
-            const tag = document.getElementById('editTag');
-            const content = document.getElementById('editContent');
-            if (!title || !content) return;
-            const save = () => {
-                const draft = { title: title.value, tag: tag?tag.value:'', content: content.value, ts: Date.now() };
-                try { localStorage.setItem('blog_draft', JSON.stringify(draft)); } catch(e) {}
-            };
-            if (autoSaveTimer) clearInterval(autoSaveTimer);
-            autoSaveTimer = setInterval(save, 15000);
-        }
-        function restoreDraft() {
-            try {
-                const raw = localStorage.getItem('blog_draft');
-                if (!raw) return;
-                const draft = JSON.parse(raw);
-                const t=document.getElementById('editTitle'), g=document.getElementById('editTag'), c=document.getElementById('editContent');
-                if(t&&draft.title)t.value=draft.title; if(g&&draft.tag)g.value=draft.tag; if(c&&draft.content)c.value=draft.content;
-            } catch(e) {}
-        }
-        function clearDraft() { try { localStorage.removeItem('blog_draft'); } catch(e) {} }
-        const origOE3 = openEditor;
-        openEditor = function(idx) { origOE3(idx); if(idx===undefined||idx===null){setTimeout(()=>{restoreDraft();initAutoSave();},100);} };
-        const origSA3 = saveArticle;
-        saveArticle = async function() { await origSA3.call(this,...arguments); clearDraft(); };
-
-        
-        let visitorIP = null;
-        async function getVisitorIP() {
-            try {
-                const ctrl = new AbortController();
-                const timer = setTimeout(() => ctrl.abort(), 5000);
-                const res = await fetch('https://ip-api.com/json/?fields=query,city,region,country,isp', { signal: ctrl.signal });
-                clearTimeout(timer);
-                if (!res.ok) return;
-                visitorIP = await res.json();
-            } catch(e) {}
-        }
-        const origSM2 = submitMessage;
-        submitMessage = async function() {
-            if (visitorIP) {
-                const ta = document.getElementById('msgText');
-                if (ta) ta.dataset.ip = JSON.stringify(visitorIP);
-            }
-            return origSM2(...arguments);
-        };
-        const origSC2 = submitComment;
-        submitComment = async function() {
-            if (visitorIP) {
-                const ta = document.getElementById('commentText');
-                if (ta) ta.dataset.ip = JSON.stringify(visitorIP);
-            }
-            return origSC2(...arguments);
-        };
-        getVisitorIP();
-
-
-        .tag-filter-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
-        .tag-filter-bar span { padding:4px 14px; border-radius:20px; font-size:.78rem;
-            border:1px solid var(--border); cursor:pointer; color:var(--text-secondary);
-            background:var(--bg-card); transition:all .15s; user-select:none; }
-        .tag-filter-bar span:hover { border-color:var(--accent); color:var(--text); }
-        .tag-filter-bar span.active { background:var(--accent); color:var(--bg); border-color:var(--accent); }
-
-        
-        function initTagFilter() {
-            const bar = document.getElementById('tagFilterBar');
-            if (!bar) return;
-            bar.addEventListener('click', (e) => {
-                const span = e.target.closest('span');
-                if (!span) return;
-                bar.querySelectorAll('span').forEach(s => s.classList.remove('active'));
-                span.classList.add('active');
-                renderArticleList(span.dataset.tag || '');
-            });
-        }
-
-
-        .code-wrap { position: relative; }
-        .code-copy-btn {
-            position: absolute; top: 6px; right: 6px; z-index: 2;
-            background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 6px; width: 28px; height: 28px;
-            font-size: .75rem; cursor: pointer; opacity: 0;
-            transition: opacity .15s; color: var(--text-secondary);
-            display: flex; align-items: center; justify-content: center;
-        }
-        .code-wrap:hover .code-copy-btn { opacity: 1; }
-        .code-copy-btn:hover { background: var(--bg-soft); color: var(--text); }
-        .code-copy-btn.copied { opacity: 1; color: #22c55e; }
-
-        
-        function initCopyCode() {
-            document.querySelectorAll('pre code').forEach((block) => {
-                const pre = block.parentElement;
-                if (pre.classList.contains('code-wrap')) return;
-                pre.classList.add('code-wrap');
-                const btn = document.createElement('button');
-                btn.className = 'code-copy-btn'; btn.textContent = '📋'; btn.title = '复制代码';
-                btn.addEventListener('click', async () => {
-                    try { await navigator.clipboard.writeText(block.textContent);
-                        btn.textContent = '✓'; btn.classList.add('copied');
-                        setTimeout(() => { btn.textContent = '📋'; btn.classList.remove('copied'); }, 1800); }
-                    catch(e) { btn.textContent = '✗'; setTimeout(() => btn.textContent = '📋', 1200); }
-                });
-                pre.appendChild(btn);
-            });
-        }
-
-
-        .lightbox-overlay { position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.85); display:flex;
-            align-items:center; justify-content:center; opacity:0; pointer-events:none;
-            transition:opacity .25s ease; cursor:zoom-out; }
-        .lightbox-overlay.open { opacity:1; pointer-events:auto; }
-        .lightbox-overlay img { max-width:92vw; max-height:92vh; object-fit:contain; border-radius:4px; box-shadow:0 8px 40px rgba(0,0,0,.4); }
-        .lightbox-close { position:absolute; top:18px; right:18px; color:rgba(255,255,255,.7); font-size:1.8rem; cursor:pointer; line-height:1; }
-        .lightbox-close:hover { color:#fff; }
-
-        
-        function initLightbox() {
-            const overlay = document.getElementById('lightboxOverlay');
-            const img = document.getElementById('lightboxImg');
-            if (!overlay || !img) return;
-            const close = document.getElementById('lightboxClose');
-            const pics = document.querySelectorAll('.art-content img, .gh-editor-preview img');
-            const handle = (el) => { el.style.cursor = 'zoom-in'; el.addEventListener('click', (e) => { e.stopPropagation(); img.src = el.src; overlay.classList.add('open'); }); };
-            pics.forEach(handle);
-            close.addEventListener('click', () => overlay.classList.remove('open'));
-            overlay.addEventListener('click', () => overlay.classList.remove('open'));
-            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') overlay.classList.remove('open'); });
-        }
-
-        
-        function initShareBtn() {
-            const btn = document.getElementById('shareBtn');
-            if (!btn) return;
-            btn.addEventListener('click', async () => {
-                const url = window.location.href;
-                const title = document.title || '芸芣苡';
-                if (navigator.share) { try { await navigator.share({ title, url }); return; } catch(e) {} }
-                try { await navigator.clipboard.writeText(url); btn.textContent = '✓ 已复制'; setTimeout(() => btn.textContent = '↗ 分享', 2000); }
-                catch(e) { prompt('复制链接:', url); }
-            });
-        }
-
-        
-        const origOA = openArticle;
-        openArticle = function(id) { origOA(id); setTimeout(() => { initLightbox(); initCopyCode(); initShareBtn(); }, 300); };
-
-        /* ===== Paper scholar UX polish ===== */
-        /* 代码块复制按钮 */
-        .copy-btn {
-            position: absolute; top: 6px; right: 6px;
-            padding: 3px 10px; font-size: .72rem; border: none;
-            border-radius: 6px; background: var(--bg-soft);
-            color: var(--text-dim); cursor: pointer; opacity: 0;
-            transition: opacity .15s ease; z-index: 2;
-        }
-        pre:hover .copy-btn { opacity: 1; }
-        .copy-btn:hover { background: var(--accent); color: var(--bg); }
-        /* Lightbox */
-        .lightbox-overlay {
-            position: fixed; inset: 0; z-index: 9999;
-            background: rgba(0,0,0,.82); display: flex;
-            align-items: center; justify-content: center;
-            opacity: 0; transition: opacity .2s ease;
-            padding: 20px; cursor: zoom-out;
-        }
-        .lightbox-overlay.show { opacity: 1; }
-        .lightbox-close {
-            position: fixed; top: 20px; right: 24px;
-            font-size: 2rem; color: #fff; cursor: pointer; z-index: 2;
-            line-height: 1; opacity: .7;
-        }
-        .lightbox-close:hover { opacity: 1; }
-        .lightbox-img {
-            max-width: 95%; max-height: 92vh; object-fit: contain;
-            border-radius: 8px; box-shadow: 0 8px 40px rgba(0,0,0,.4); cursor: default;
-        }
-        /* 分享按钮面板 */
-        .share-panel {
-            display: none; position: absolute; top: 100%; right: 0;
-            background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: var(--radius); box-shadow: var(--shadow);
-            padding: 8px; z-index: 100; white-space: nowrap;
-        }
-        .share-panel.show { display: flex; gap: 6px; }
-        .share-panel a {
-            display: inline-flex; align-items: center; gap: 4px;
-            padding: 6px 12px; border-radius: 6px;
-            font-size: .82rem; color: var(--text); text-decoration: none;
-        }
-        .share-panel a:hover { background: var(--bg-soft); }
-        /* 标签云 */
-        #tagCloud {
-            display: flex; flex-wrap: wrap; gap: 10px 14px;
-            padding: 20px 0; align-items: center; justify-content: center;
-        }
-        .tag-cloud-item {
-            cursor: pointer; color: var(--text-secondary);
-            transition: color .15s ease, transform .15s ease;
-            padding: 2px 0; line-height: 1.4;
-        }
-        .tag-cloud-item:hover { color: var(--accent); transform: translateY(-1px); }
-        .tag-cloud-item sup { font-size: .6rem; margin-left: 2px; opacity: .5; }
-        /* 访客IP显示 */
-        .visitor-loc { font-size: .72rem; color: var(--text-dim); margin-top: 2px; }
-        /* 统计 */
-        .busuanzi-wrap { text-align: center; font-size: .78rem; color: var(--text-dim); margin-top: 40px; padding: 12px 0; border-top: 1px solid var(--border); }
-        .busuanzi-wrap span { margin: 0 4px; }
+        /* 清理：移除上次误注入到 style 中的无关 JS/CSS 残留 */
 
         .art-entry {
             padding: 18px 16px !important;
@@ -1755,26 +1501,37 @@
         <!-- ========== VIEW: ABOUT ========== -->
         
         <!-- ========== VIEW: GUESTBOOK ========== -->
-        <section class="view" id="view-guestbook">
+        <section class="view guestbook-shell" id="view-guestbook">
             <div class="page-header">
                 <h2>留言板</h2>
             </div>
-            <div class="reveal" style="margin-bottom: 24px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 6px; padding: 20px;">
-                <h3 style="margin-bottom: 12px; font-size: .95rem; font-weight: 500;">留下你想说的话 ✨</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                    <input type="text" id="msgNick" placeholder="昵称" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); font-size: .85rem;" />
-                    <input type="email" id="msgEmail" placeholder="邮箱（选填，仅管理员可见）" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); font-size: .85rem;" />
+            <p class="guestbook-intro">欢迎留下想法、建议或一句问候。昵称必填，邮箱选填且仅站长登录后可见；正文支持 Markdown。</p>
+            <div class="guest-form-card reveal">
+                <div class="guest-form-title">
+                    <h3>留下你想说的话 ✨</h3>
+                    <span>同步到 GitHub · 所有访客可见</span>
                 </div>
-                <div style="margin-bottom: 10px;">
-                    <input type="text" id="msgAvatar" placeholder="头像关键字 (如 cat, dev 等，选填)" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); font-size: .85rem;" />
+                <div class="guest-grid">
+                    <input class="guest-input" type="text" id="msgNick" placeholder="昵称 *" maxlength="20" autocomplete="nickname" />
+                    <input class="guest-input" type="email" id="msgEmail" placeholder="邮箱（选填，仅管理员可见）" maxlength="80" autocomplete="email" />
                 </div>
-                <textarea id="msgContent" placeholder="在此写下你的留言... 支持 Markdown" style="width: 100%; min-height: 80px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); font-size: .85rem; resize: vertical; margin-bottom: 6px; font-family: inherit;"></textarea>
-                <div style="font-size:.72rem;color:var(--text-dim);margin-bottom:10px;">支持 Markdown；邮箱选填且仅管理员可见；留言会同步到 GitHub</div>
-                <div style="display: flex; justify-content: flex-end;">
-                    <button class="btn btn-sm" id="msgSubmitBtn" style="cursor: pointer;">提交留言</button>
+                <input class="guest-input" type="text" id="msgAvatar" placeholder="头像种子（选填，默认用昵称生成）" maxlength="40" autocomplete="off" />
+                <input class="guest-honeypot" type="text" id="msgWebsite" tabindex="-1" autocomplete="off" aria-hidden="true" />
+                <textarea class="guest-textarea" id="msgContent" placeholder="在此写下你的留言... 支持 **Markdown**、`代码`、[链接](https://example.com)" maxlength="1000"></textarea>
+                <div class="guest-meta-row">
+                    <div class="guest-tabs" role="tablist" aria-label="留言编辑预览">
+                        <button type="button" class="guest-tab active" id="msgWriteTab">编辑</button>
+                        <button type="button" class="guest-tab" id="msgPreviewTab">预览</button>
+                    </div>
+                    <div class="guest-counter" id="msgCounter">0 / 1000</div>
+                </div>
+                <div class="guest-preview markdown-body" id="msgPreview"></div>
+                <div class="guest-actions">
+                    <div class="guest-hint">会自动记住你的昵称、邮箱和头像种子；30 秒内不能重复提交相同内容。</div>
+                    <button class="btn btn-sm" id="msgSubmitBtn" type="button">提交留言</button>
                 </div>
             </div>
-            <div id="guestbookList"></div>
+            <div class="guest-list" id="guestbookList"></div>
         </section>
 
         <section class="view" id="view-about">
@@ -3281,30 +3038,143 @@
         //  GUESTBOOK SYSTEM (GitHub JSON Storage — 访客可写)
         // ================================================================
         let messages = [];
+        let guestPreviewMode = false;
+        const GUEST_PROFILE_KEY = 'blog_guest_profile_v1';
+        const GUEST_LAST_KEY = 'blog_guest_last_submit_v1';
+        const GUEST_MAX_LEN = 1000;
 
         function initGuestbook() {
             const btn = $('msgSubmitBtn');
             if (btn) btn.addEventListener('click', submitMessage);
+            bindGuestbookForm();
+            loadGuestProfile();
+            updateGuestCounter();
             loadMessages();
+        }
+
+        function bindGuestbookForm() {
+            const content = $('msgContent');
+            const writeTab = $('msgWriteTab');
+            const previewTab = $('msgPreviewTab');
+            if (content) {
+                content.addEventListener('input', () => {
+                    updateGuestCounter();
+                    if (guestPreviewMode) renderGuestPreview();
+                });
+            }
+            ['msgNick', 'msgEmail', 'msgAvatar'].forEach(id => {
+                const el = $(id);
+                if (el) el.addEventListener('change', saveGuestProfile);
+            });
+            if (writeTab) writeTab.addEventListener('click', () => setGuestPreviewMode(false));
+            if (previewTab) previewTab.addEventListener('click', () => setGuestPreviewMode(true));
+        }
+
+        function loadGuestProfile() {
+            try {
+                const p = JSON.parse(localStorage.getItem(GUEST_PROFILE_KEY) || '{}');
+                if ($('msgNick') && p.nick) $('msgNick').value = p.nick;
+                if ($('msgEmail') && p.email) $('msgEmail').value = p.email;
+                if ($('msgAvatar') && p.avatar) $('msgAvatar').value = p.avatar;
+            } catch(e) {}
+        }
+
+        function saveGuestProfile() {
+            try {
+                const profile = {
+                    nick: ($('msgNick') && $('msgNick').value || '').trim(),
+                    email: ($('msgEmail') && $('msgEmail').value || '').trim(),
+                    avatar: ($('msgAvatar') && $('msgAvatar').value || '').trim()
+                };
+                localStorage.setItem(GUEST_PROFILE_KEY, JSON.stringify(profile));
+            } catch(e) {}
+        }
+
+        function updateGuestCounter() {
+            const el = $('msgContent');
+            const counter = $('msgCounter');
+            if (!el || !counter) return;
+            const n = el.value.length;
+            counter.textContent = n + ' / ' + GUEST_MAX_LEN;
+            counter.style.color = n > GUEST_MAX_LEN * 0.92 ? '#b91c1c' : 'var(--text-dim)';
+        }
+
+        function setGuestPreviewMode(on) {
+            guestPreviewMode = !!on;
+            const content = $('msgContent');
+            const preview = $('msgPreview');
+            const writeTab = $('msgWriteTab');
+            const previewTab = $('msgPreviewTab');
+            if (content) content.style.display = guestPreviewMode ? 'none' : 'block';
+            if (preview) preview.classList.toggle('show', guestPreviewMode);
+            if (writeTab) writeTab.classList.toggle('active', !guestPreviewMode);
+            if (previewTab) previewTab.classList.toggle('active', guestPreviewMode);
+            if (guestPreviewMode) renderGuestPreview();
+        }
+
+        function renderGuestPreview() {
+            const preview = $('msgPreview');
+            const raw = ($('msgContent') && $('msgContent').value || '').trim();
+            if (!preview) return;
+            preview.innerHTML = raw ? renderGuestMarkdown(raw) : '<span style="color:var(--text-dim)">写点内容后在这里预览 Markdown。</span>';
+        }
+
+        function renderGuestMarkdown(raw) {
+            let out = '';
+            if (typeof marked !== 'undefined') out = marked.parse(raw || '', { breaks: true });
+            else out = escHtml(raw || '').replace(/\n/g, '<br>');
+            return sanitizeGuestHtml(out);
+        }
+
+        function sanitizeGuestHtml(inputHtml) {
+            const tpl = document.createElement('template');
+            tpl.innerHTML = inputHtml || '';
+            const allowed = new Set(['A','P','BR','STRONG','B','EM','I','CODE','PRE','BLOCKQUOTE','UL','OL','LI','DEL','S','HR']);
+            const walk = (node) => {
+                Array.from(node.children || []).forEach(el => {
+                    if (!allowed.has(el.tagName)) {
+                        el.replaceWith(document.createTextNode(el.textContent || ''));
+                        return;
+                    }
+                    Array.from(el.attributes).forEach(attr => {
+                        const name = attr.name.toLowerCase();
+                        if (name.startsWith('on') || name === 'style' || name === 'class' || name === 'id') {
+                            el.removeAttribute(attr.name);
+                            return;
+                        }
+                        if (el.tagName === 'A' && name === 'href') {
+                            const href = attr.value || '';
+                            if (!/^(https?:|mailto:|#)/i.test(href)) el.removeAttribute('href');
+                            else { el.setAttribute('target', '_blank'); el.setAttribute('rel', 'noopener noreferrer'); }
+                            return;
+                        }
+                        if (!(el.tagName === 'A' && name === 'href')) el.removeAttribute(attr.name);
+                    });
+                    walk(el);
+                });
+            };
+            walk(tpl.content);
+            return tpl.innerHTML;
+        }
+
+        function guestStateHtml(title, subtitle) {
+            return '<div class="guest-state"><div>' + escHtml(title) + '</div>' +
+                (subtitle ? '<div style="font-size:.78rem;margin-top:4px">' + escHtml(subtitle) + '</div>' : '') + '</div>';
         }
 
         async function loadMessages() {
             const list = $('guestbookList');
             if (!list) return;
-            list.innerHTML = '<div style="font-size:.82rem;color:var(--text-dim);padding:8px 0">留言加载中...</div>';
+            list.innerHTML = guestStateHtml('留言加载中...', '正在从 GitHub 同步');
             try {
-                const res = await fetch('https://raw.githubusercontent.com/eliyfy/yfy_blog/main/guestbook.json?t=' + Date.now());
-                if (res.status === 404) {
-                    messages = [];
-                    list.innerHTML = '<div style="font-size:.82rem;color:var(--text-dim);padding:8px 0">暂无留言，快来抢沙发吧~</div>';
-                    return;
-                }
+                const res = await fetch('https://raw.githubusercontent.com/eliyfy/yfy_blog/main/guestbook.json?t=' + Date.now(), { cache: 'no-store' });
+                if (res.status === 404) { messages = []; renderMessages(); return; }
                 if (!res.ok) throw new Error('load ' + res.status);
                 const data = await res.json();
                 messages = Array.isArray(data) ? data : [];
                 renderMessages();
             } catch (e) {
-                list.innerHTML = '<div style="font-size:.82rem;color:var(--text-dim);padding:8px 0">暂无留言，快来抢沙发吧~</div>';
+                list.innerHTML = guestStateHtml('留言加载失败', '稍后刷新再试，或检查网络连接。');
             }
         }
 
@@ -3312,80 +3182,81 @@
             const list = $('guestbookList');
             if (!list) return;
             if (!messages.length) {
-                list.innerHTML = '<div style="font-size:.82rem;color:var(--text-dim);padding:8px 0">暂无留言，快来抢沙发吧~</div>';
+                list.innerHTML = guestStateHtml('还没有留言', '成为第一个留下脚印的人吧。');
                 return;
             }
-            let html = '';
-            messages.slice().reverse().forEach(m => {
+            const sorted = messages.slice().sort((a,b) => (b.ts || 0) - (a.ts || 0));
+            let out = '';
+            sorted.forEach(m => {
+                const id = escHtml(m.id || '');
                 const nick = escHtml(m.nick || '匿名网友');
-                const raw = m.content || '';
-                const contentHtml = (typeof marked !== 'undefined')
-                    ? marked.parse(raw, { breaks: true })
-                    : escHtml(raw).replace(/\n/g, '<br>');
-                const date = m.date || '';
-                const avatar = 'https://api.dicebear.com/7.x/identicon/svg?seed=' + encodeURIComponent(m.avatar || m.nick || 'guest');
-                const emailHtml = (isLoggedIn && m.email)
-                    ? '<span class="comment-email">📧 ' + escHtml(m.email) + '</span>'
-                    : '';
-                const delHtml = isLoggedIn
-                    ? '<span class="comment-del" style="margin-left:10px;cursor:pointer" data-mid="' + escHtml(m.id || '') + '" onclick="delGuestbookMessage(this.dataset.mid)">删除</span>'
-                    : '';
-
-                html += '<div class="reveal" style="display:flex;gap:14px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:16px;">' +
-                    '<img src="' + avatar + '" style="width:36px;height:36px;border-radius:50%;background:var(--bg-soft);border:1px solid var(--border);" />' +
-                    '<div style="flex:1;">' +
-                    '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;flex-wrap:wrap;gap:4px;">' +
-                    '<span style="font-weight:500;font-size:.88rem;color:var(--text);">' + nick + emailHtml + delHtml + '</span>' +
-                    '<span style="font-size:.72rem;color:var(--text-dim);font-family:var(--font-mono);">' + escHtml(date) + '</span>' +
-                    '</div>' +
-                    '<div class="markdown-body comment-body" style="font-size:.85rem;line-height:1.6;color:var(--text-secondary);">' + contentHtml + '</div>' +
-                    '</div></div>';
+                const seed = m.avatar || m.nick || 'guest';
+                const avatar = 'https://api.dicebear.com/7.x/identicon/svg?seed=' + encodeURIComponent(seed);
+                const date = escHtml(m.date || formatGuestDate(m.ts));
+                const contentHtml = renderGuestMarkdown(m.content || '');
+                const emailHtml = (isLoggedIn && m.email) ? '<div class="guest-admin-email">邮箱：' + escHtml(m.email) + '</div>' : '';
+                const adminHtml = isLoggedIn ? '<div class="guest-admin">' +
+                    '<button type="button" data-mid="' + id + '" onclick="copyGuestMessage(this.dataset.mid)">复制留言</button>' +
+                    '<button type="button" class="danger" data-mid="' + id + '" onclick="delGuestbookMessage(this.dataset.mid)">删除</button>' +
+                    '</div>' : '';
+                out += '<article class="guest-card reveal" data-mid="' + id + '">' +
+                    '<div class="guest-avatar"><img loading="lazy" decoding="async" src="' + avatar + '" alt=""></div>' +
+                    '<div class="guest-main"><div class="guest-head"><div class="guest-author"><strong>' + nick + '</strong><span class="guest-badge">访客</span></div>' +
+                    '<time class="guest-time">' + date + '</time></div>' +
+                    '<div class="guest-body markdown-body">' + contentHtml + '</div>' + emailHtml + adminHtml + '</div></article>';
             });
-            list.innerHTML = html;
+            list.innerHTML = out;
             if (typeof initScrollReveal === 'function') initScrollReveal();
         }
+
+        function formatGuestDate(ts) {
+            if (!ts) return '';
+            const d = new Date(ts);
+            if (isNaN(d.getTime())) return '';
+            return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') +
+                ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+        }
+
+        function isDuplicateGuestSubmit(content) {
+            try {
+                const last = JSON.parse(localStorage.getItem(GUEST_LAST_KEY) || '{}');
+                return last.content === content && Date.now() - (last.ts || 0) < 30000;
+            } catch(e) { return false; }
+        }
+        function markGuestSubmitted(content) { try { localStorage.setItem(GUEST_LAST_KEY, JSON.stringify({ content, ts: Date.now() })); } catch(e) {} }
 
         async function submitMessage() {
             const nick = ($('msgNick') && $('msgNick').value || '').trim();
             const email = ($('msgEmail') && $('msgEmail').value || '').trim();
-            const avatar = ($('msgAvatar') && $('msgAvatar').value || '').trim();
+            const avatarSeed = ($('msgAvatar') && $('msgAvatar').value || '').trim();
             const content = ($('msgContent') && $('msgContent').value || '').trim();
-
+            const hp = ($('msgWebsite') && $('msgWebsite').value || '').trim();
+            if (hp) return;
             if (!nick) { toast('请输入你的昵称~', 'e'); return; }
-            if (!content) { toast('请写下你的留言正文~', 'e'); return; }
-            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                toast('邮箱格式不正确', 'e'); return;
-            }
+            if (nick.length > 20) { toast('昵称最多 20 个字', 'e'); return; }
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('邮箱格式不正确', 'e'); return; }
+            if (content.length < 2) { toast('留言至少写 2 个字~', 'e'); return; }
+            if (content.length > GUEST_MAX_LEN) { toast('留言最多 ' + GUEST_MAX_LEN + ' 字', 'e'); return; }
+            if (isDuplicateGuestSubmit(content)) { toast('刚刚发过相同内容，稍后再试~', 'e'); return; }
 
             const btn = $('msgSubmitBtn');
-            if (btn) { btn.disabled = true; btn.textContent = '提交中...'; }
-
+            if (btn && btn.disabled) return;
+            if (btn) { btn.disabled = true; btn.textContent = '同步中...'; }
             const d = new Date();
-            const dateStr = d.getFullYear() + '-' +
-                String(d.getMonth()+1).padStart(2,'0') + '-' +
-                String(d.getDate()).padStart(2,'0') + ' ' +
-                String(d.getHours()).padStart(2,'0') + ':' +
-                String(d.getMinutes()).padStart(2,'0');
-
-            const newMsg = {
-                id: 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
-                nick: nick,
-                email: email || '',
-                avatar: avatar,
-                content: content,
-                date: dateStr,
-                ts: Date.now()
-            };
+            const newMsg = { id: 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), nick, email: email || '', avatar: avatarSeed || nick, content, date: formatGuestDate(d.getTime()), ts: d.getTime() };
 
             try {
+                saveGuestProfile();
                 const updated = await putJsonToGitHub('guestbook.json', (remote) => {
                     const arr = Array.isArray(remote) ? remote.slice() : [];
                     arr.push(newMsg);
                     return arr;
                 }, 'guestbook: 来自 ' + nick + ' 的新留言');
                 messages = updated;
+                markGuestSubmitted(content);
                 if ($('msgContent')) $('msgContent').value = '';
-                if ($('msgEmail')) $('msgEmail').value = '';
+                updateGuestCounter();
+                if (guestPreviewMode) setGuestPreviewMode(false);
                 renderMessages();
                 toast('留言成功，已同步云端！');
             } catch (e) {
@@ -3407,11 +3278,19 @@
                 messages = updated;
                 renderMessages();
                 toast('已删除');
-            } catch (e) {
-                toast('删除失败: ' + (e.message || e), 'e');
-            }
+            } catch (e) { toast('删除失败: ' + (e.message || e), 'e'); }
         }
         window.delGuestbookMessage = delGuestbookMessage;
+
+        function copyGuestMessage(id) {
+            if (!isLoggedIn) return;
+            const m = messages.find(x => x.id === id);
+            if (!m) return;
+            const text = (m.nick || '匿名网友') + '：\n' + (m.content || '');
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => toast('已复制留言')).catch(() => prompt('复制留言', text));
+            else prompt('复制留言', text);
+        }
+        window.copyGuestMessage = copyGuestMessage;
 
         // ================================================================
 //  MUSIC PLAYER  (Meting 多源：搜索 + 默认歌单)

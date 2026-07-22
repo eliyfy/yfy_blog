@@ -762,6 +762,18 @@
         .guest-admin button:hover { color:var(--accent); border-color:var(--accent); }
         .guest-admin .danger:hover { color:#b91c1c; border-color:#ef4444; }
         .guest-admin-email { font-size:.72rem; color:var(--text-dim); margin-top:6px; font-family:var(--font-mono); }
+         .guest-card.pinned { border-color: color-mix(in srgb, var(--accent) 48%, var(--border)); box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 10%, transparent); }
+         .guest-card.owner-card { border-left: 3px solid var(--accent); }
+         .guest-pin-mark { display:inline-flex; align-items:center; gap:4px; color:var(--accent); font-size:.68rem; border:1px solid color-mix(in srgb, var(--accent) 38%, var(--border)); border-radius:999px; padding:1px 7px; }
+         .guest-reaction-row { display:flex; align-items:center; gap:8px; margin-top:12px; }
+         .guest-like { display:inline-flex; align-items:center; gap:5px; border:1px solid var(--border); background:var(--bg); color:var(--text-dim); border-radius:999px; padding:4px 10px; font-size:.75rem; cursor:pointer; transition:color .15s, border-color .15s, background .15s; }
+         .guest-like:hover, .guest-like.liked { color:#b91c1c; border-color:#ef4444; background:color-mix(in srgb, #ef4444 8%, var(--bg)); }
+         .guest-like:disabled { opacity:.6; cursor:wait; }
+         .owner-badge { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 38%, var(--border)); }
+         .guest-like:focus-visible, .guest-admin button:focus-visible, .guest-tab:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+         .guest-state-action { margin-top:12px; border:1px solid var(--border); background:var(--bg); color:var(--text-secondary); border-radius:999px; padding:6px 12px; font-size:.76rem; cursor:pointer; }
+         .guest-state-action:hover { color:var(--accent); border-color:var(--accent); }
+
         @media (max-width: 640px) {
             .comment-form-row, .guest-grid { grid-template-columns:1fr; flex-direction:column; }
             .guest-form-card { padding:16px; }
@@ -2343,6 +2355,7 @@
                 }
             }
             if (typeof refreshSiteMusicForm === 'function') refreshSiteMusicForm();
+            if (typeof renderMessages === 'function') renderMessages();
         }
 
         // ================================================================
@@ -3174,7 +3187,7 @@
                 messages = Array.isArray(data) ? data : [];
                 renderMessages();
             } catch (e) {
-                list.innerHTML = guestStateHtml('留言加载失败', '稍后刷新再试，或检查网络连接。');
+                list.innerHTML = guestStateHtml('留言加载失败', '稍后刷新再试，或检查网络连接。') + '<button type="button" class="guest-state-action" onclick="loadMessages()">重新加载</button>';
             }
         }
 
@@ -3185,25 +3198,40 @@
                 list.innerHTML = guestStateHtml('还没有留言', '成为第一个留下脚印的人吧。');
                 return;
             }
-            const sorted = messages.slice().sort((a,b) => (b.ts || 0) - (a.ts || 0));
+            const sorted = messages.slice().sort((a,b) => {
+                const pinDiff = Number(!!b.pinned) - Number(!!a.pinned);
+                return pinDiff || ((b.ts || 0) - (a.ts || 0));
+            });
             let out = '';
             sorted.forEach(m => {
-                const id = escHtml(m.id || '');
-                const nick = escHtml(m.nick || '匿名网友');
-                const seed = m.avatar || m.nick || 'guest';
+                const guestId = String(m.id || '');
+                const id = escHtml(guestId);
+                const nickText = m.nick || '匿名网友';
+                const nick = escHtml(nickText);
+                const seed = m.avatar || nickText || 'guest';
                 const avatar = 'https://api.dicebear.com/7.x/identicon/svg?seed=' + encodeURIComponent(seed);
                 const date = escHtml(m.date || formatGuestDate(m.ts));
                 const contentHtml = renderGuestMarkdown(m.content || '');
+                const owner = isGuestOwner(m);
+                const pinned = !!m.pinned;
+                const liked = guestLikeState(guestId);
+                const likeCount = Math.max(0, Number(m.likes) || 0);
+                const ownerBadge = owner ? '<span class="guest-badge owner-badge">站长</span>' : '<span class="guest-badge">访客</span>';
+                const pinBadge = pinned ? '<span class="guest-pin-mark">置顶</span>' : '';
                 const emailHtml = (isLoggedIn && m.email) ? '<div class="guest-admin-email">邮箱：' + escHtml(m.email) + '</div>' : '';
                 const adminHtml = isLoggedIn ? '<div class="guest-admin">' +
                     '<button type="button" data-mid="' + id + '" onclick="copyGuestMessage(this.dataset.mid)">复制留言</button>' +
+                    '<button type="button" data-mid="' + id + '" onclick="toggleGuestOwner(this.dataset.mid)">' + (owner ? '取消站长标识' : '设为站长') + '</button>' +
+                    '<button type="button" data-mid="' + id + '" onclick="toggleGuestPin(this.dataset.mid)">' + (pinned ? '取消置顶' : '置顶') + '</button>' +
                     '<button type="button" class="danger" data-mid="' + id + '" onclick="delGuestbookMessage(this.dataset.mid)">删除</button>' +
                     '</div>' : '';
-                out += '<article class="guest-card reveal" data-mid="' + id + '">' +
+                out += '<article class="guest-card reveal' + (pinned ? ' pinned' : '') + (owner ? ' owner-card' : '') + '" data-mid="' + id + '">' +
                     '<div class="guest-avatar"><img loading="lazy" decoding="async" src="' + avatar + '" alt=""></div>' +
-                    '<div class="guest-main"><div class="guest-head"><div class="guest-author"><strong>' + nick + '</strong><span class="guest-badge">访客</span></div>' +
+                    '<div class="guest-main"><div class="guest-head"><div class="guest-author"><strong>' + nick + '</strong>' + ownerBadge + pinBadge + '</div>' +
                     '<time class="guest-time">' + date + '</time></div>' +
-                    '<div class="guest-body markdown-body">' + contentHtml + '</div>' + emailHtml + adminHtml + '</div></article>';
+                    '<div class="guest-body markdown-body">' + contentHtml + '</div>' +
+                    '<div class="guest-reaction-row"><button type="button" class="guest-like' + (liked ? ' liked' : '') + '" data-mid="' + id + '" onclick="toggleGuestLike(this.dataset.mid)" aria-pressed="' + (liked ? 'true' : 'false') + '"><span aria-hidden="true">' + (liked ? '♥' : '♡') + '</span><span>' + likeCount + '</span></button></div>' +
+                    emailHtml + adminHtml + '</div></article>';
             });
             list.innerHTML = out;
             if (typeof initScrollReveal === 'function') initScrollReveal();
@@ -3243,7 +3271,7 @@
             if (btn && btn.disabled) return;
             if (btn) { btn.disabled = true; btn.textContent = '同步中...'; }
             const d = new Date();
-            const newMsg = { id: 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), nick, email: email || '', avatar: avatarSeed || nick, content, date: formatGuestDate(d.getTime()), ts: d.getTime() };
+            const newMsg = { id: 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), nick, email: email || '', avatar: avatarSeed || nick, content, date: formatGuestDate(d.getTime()), ts: d.getTime(), owner: !!isLoggedIn };
 
             try {
                 saveGuestProfile();
@@ -3292,8 +3320,94 @@
         }
         window.copyGuestMessage = copyGuestMessage;
 
+        const GUEST_LIKES_KEY = 'blog_guest_likes_v1';
+
+        function readGuestLikes() {
+            try { return JSON.parse(localStorage.getItem(GUEST_LIKES_KEY) || '{}') || {}; }
+            catch (e) { return {}; }
+        }
+
+        function guestLikeState(id) {
+            if (!id) return false;
+            return !!readGuestLikes()[id];
+        }
+
+        async function toggleGuestLike(id) {
+            if (!id || guestbookMutationBusy) return;
+            const message = messages.find(m => m.id === id);
+            if (!message) return;
+            const nextLiked = !guestLikeState(id);
+            const likes = readGuestLikes();
+            const button = document.querySelector('.guest-like[data-mid="' + CSS.escape(id) + '"]');
+            guestbookMutationBusy = true;
+            if (button) button.disabled = true;
+            try {
+                const updated = await putJsonToGitHub('guestbook.json', (remote) => {
+                    const arr = Array.isArray(remote) ? remote.slice() : [];
+                    return arr.map(m => {
+                        if (m.id !== id) return m;
+                        const current = Math.max(0, Number(m.likes) || 0);
+                        return Object.assign({}, m, { likes: Math.max(0, current + (nextLiked ? 1 : -1)) });
+                    });
+                }, 'guestbook: 点赞留言 ' + id);
+                if (nextLiked) likes[id] = true;
+                else delete likes[id];
+                try { localStorage.setItem(GUEST_LIKES_KEY, JSON.stringify(likes)); } catch (e) {}
+                messages = updated;
+                renderMessages();
+            } catch (e) {
+                if (button) button.disabled = false;
+                toast('点赞失败: ' + (e.message || e), 'e');
+            } finally {
+                guestbookMutationBusy = false;
+            }
+        }
+        window.toggleGuestLike = toggleGuestLike;
+
+        function isGuestOwner(message) {
+            if (!message) return false;
+            if (Object.prototype.hasOwnProperty.call(message, 'owner')) return message.owner === true;
+            return message.isOwner === true || message.role === 'owner';
+        }
+
+        let guestbookMutationBusy = false;
+
+        async function updateGuestMessage(id, updater, successText, errorPrefix) {
+            if (!isLoggedIn || !id || guestbookMutationBusy) return;
+            guestbookMutationBusy = true;
+            try {
+                const updated = await putJsonToGitHub('guestbook.json', (remote) => {
+                    const arr = Array.isArray(remote) ? remote.slice() : [];
+                    return arr.map(m => m.id === id ? updater(Object.assign({}, m)) : m);
+                }, 'guestbook: 更新留言 ' + id);
+                messages = updated;
+                renderMessages();
+                toast(successText);
+            } catch (e) {
+                toast((errorPrefix || '操作失败') + ': ' + (e.message || e), 'e');
+            } finally {
+                guestbookMutationBusy = false;
+            }
+        }
+
+        function toggleGuestPin(id) {
+            if (!isLoggedIn || !id) return;
+            const message = messages.find(m => m.id === id);
+            if (!message) return;
+            updateGuestMessage(id, m => { m.pinned = !m.pinned; return m; }, message.pinned ? '已取消置顶' : '已置顶', '置顶失败');
+        }
+        window.toggleGuestPin = toggleGuestPin;
+
+        function toggleGuestOwner(id) {
+            if (!isLoggedIn || !id) return;
+            const message = messages.find(m => m.id === id);
+            if (!message) return;
+            updateGuestMessage(id, m => { m.owner = !isGuestOwner(m); return m; }, isGuestOwner(message) ? '已取消站长标识' : '已设为站长', '标识更新失败');
+        }
+        window.toggleGuestOwner = toggleGuestOwner;
+
         // ================================================================
-//  MUSIC PLAYER  (Meting 多源：搜索 + 默认歌单)
+        //  MUSIC PLAYER  (Meting 多源：搜索 + 默认歌单)
         // ================================================================
         const METING_ENDPOINTS = [
             'https://api.qijieya.cn/meting/',

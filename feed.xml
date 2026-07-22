@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>yfy_blog</title>
+  <link href="https://eliyfy.github.io/yfy_blog/" rel="self" type="application/atom+xml"/>
+  <link href="https://eliyfy.github.io/yfy_blog/"/>
+  <updated>2026-07-21T18:22:39Z</updated>
+  <id>tag:eliyfy.github.io,2026:yfy_blog</id>
+  <author><name>eliyfy</name></author>
+  <entry>
+    <title>你好，世界 —— 新博客启航</title>
+    <link href="https://eliyfy.github.io/yfy_blog/#/article/a_17001"/>
+    <id>tag:eliyfy.github.io,2026:a_17001</id>
+    <updated>2026-07-21T18:22:39Z</updated>
+    <summary type="text">## 为什么写博客
+
+一直以来都想有个自己的地方写点东西。技术笔记也好，生活感悟也好，哪怕只是几行随手的思考。
+
+&gt; 「写作是为了让人理解，而不仅仅是表达。」
+
+## 关于这个博客
+
+这是一个 **纯前端静态博客**，托管在 GitHub Pages 上。
+
+- 📝 基于 Markdown 写作
+- 🌙 支持深色/浅色主题
+- ⏱ 时间线视图
+- 📖 独立文章页面
+
+以后会陆续更新技术文章和</summary>
+  </entry>
+</feed>

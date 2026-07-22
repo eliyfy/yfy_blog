@@ -1346,6 +1346,455 @@
         }
         .detail-cover-legacy { display: none !important; }
 
+    
+        /* ===== UI Refresh 2026-07: mixed lively home + quiet reading ===== */
+        :root {
+            --leaf: #6f8f6a;
+            --leaf-soft: rgba(111,143,106,.12);
+            --ink-soft: rgba(90,63,44,.08);
+            --card-lift: 0 8px 28px rgba(74,55,40,.08);
+        }
+        [data-theme="dark"] {
+            --leaf: #8fb389;
+            --leaf-soft: rgba(143,179,137,.14);
+            --ink-soft: rgba(228,217,202,.06);
+            --card-lift: 0 10px 30px rgba(0,0,0,.28);
+        }
+        body::after {
+            content: '';
+            position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            background:
+              radial-gradient(900px 420px at 12% -8%, rgba(111,143,106,.10), transparent 60%),
+              radial-gradient(700px 360px at 100% 8%, rgba(90,63,44,.07), transparent 55%);
+            opacity: .9;
+        }
+        .header {
+            position: sticky; top: 0; z-index: 20;
+            backdrop-filter: blur(12px) saturate(1.1);
+            background: color-mix(in srgb, var(--bg) 86%, transparent);
+            border-bottom-color: color-mix(in srgb, var(--border) 80%, transparent);
+            padding-top: 18px; padding-bottom: 14px;
+            transition: background .3s, box-shadow .3s;
+        }
+        .header.scrolled { box-shadow: 0 6px 20px rgba(74,55,40,.06); }
+        .blog-title { display:inline-flex; align-items:center; gap:8px; }
+        .logo-mark {
+            display:inline-flex; align-items:center; justify-content:center;
+            width:28px; height:28px; border-radius:50%;
+            background: linear-gradient(145deg, var(--bg-card), var(--bg-soft));
+            border:1px solid var(--border); color:var(--accent);
+            font-family:var(--font-serif); font-size:.95rem; font-weight:700;
+            box-shadow: var(--shadow-soft);
+        }
+        .nav a, .nav button { border-radius:999px; }
+        .nav .active {
+            background: var(--leaf-soft);
+            color: var(--accent);
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--leaf) 28%, transparent);
+        }
+        .theme-btn {
+            width:34px; height:34px; border-radius:50%;
+            border:1px solid var(--border); background:var(--bg-card);
+            transition: transform .2s, background .2s;
+        }
+        .theme-btn:hover { transform: rotate(18deg); background:var(--bg-soft); }
+
+        /* Home */
+        .home-hero {
+            position: relative;
+            padding: 48px 0 28px;
+            overflow: hidden;
+        }
+        .home-hero::before {
+            content: '芣';
+            position: absolute; right: -8px; top: -18px;
+            font-family: var(--font-serif);
+            font-size: clamp(7rem, 22vw, 12rem);
+            line-height: 1; color: var(--accent);
+            opacity: .045; pointer-events: none; user-select: none;
+            transform: rotate(8deg);
+        }
+        .home-seal {
+            display:inline-flex; align-items:center; gap:8px;
+            margin-bottom: 14px;
+            padding: 4px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: color-mix(in srgb, var(--bg-card) 80%, transparent);
+            color: var(--text-secondary);
+            font-size: .78rem; letter-spacing: .08em;
+        }
+        .home-seal .dot {
+            width:7px; height:7px; border-radius:50%;
+            background: var(--leaf);
+            box-shadow: 0 0 0 4px var(--leaf-soft);
+            animation: pulseDot 2.4s ease-in-out infinite;
+        }
+        @keyframes pulseDot {
+            0%,100% { transform: scale(1); opacity:1; }
+            50% { transform: scale(1.15); opacity:.75; }
+        }
+        .home-name {
+            position: relative;
+            letter-spacing: .22em;
+            background: linear-gradient(180deg, var(--text) 40%, color-mix(in srgb, var(--text) 70%, var(--leaf)));
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent;
+        }
+        .home-quote {
+            max-width: 28em; margin-left:auto; margin-right:auto;
+            font-size: clamp(1.02rem, 2.4vw, 1.15rem);
+            min-height: 1.8em;
+            position: relative;
+        }
+        .home-quote.typing::after {
+            content: '▍
+            display:inline-block; margin-left:2px;
+            color: var(--leaf); animation: blink 1s step-end infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+        .home-divider {
+            width: 56px; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--leaf), transparent);
+            border: none; border-radius: 2px;
+        }
+        .home-mood {
+            display:inline-flex; gap:8px; align-items:center;
+            padding: 8px 14px; border-radius: 999px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-soft);
+            color: var(--text-secondary);
+            font-size: .86rem;
+        }
+        .home-status-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0,1fr));
+            gap: 12px;
+            margin: 28px auto 8px;
+            max-width: 640px;
+        }
+        @media (max-width: 640px) {
+            .home-status-grid { grid-template-columns: 1fr; }
+        }
+        .status-card {
+            text-align: left;
+            padding: 14px 14px 12px;
+            border-radius: 14px;
+            background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-soft);
+            transition: transform .22s ease, box-shadow .22s ease, border-color .22s;
+        }
+        .status-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--card-lift);
+            border-color: color-mix(in srgb, var(--leaf) 35%, var(--border));
+        }
+        .status-card .k {
+            font-size: .72rem; letter-spacing: .12em;
+            color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px;
+        }
+        .status-card .v {
+            font-family: var(--font-serif);
+            font-size: .98rem; color: var(--text); line-height: 1.45;
+        }
+        .home-quick {
+            display:flex; flex-wrap:wrap; justify-content:center; gap:8px;
+            margin: 22px 0 6px;
+        }
+        .home-quick a {
+            padding: 8px 14px; border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            font-size: .82rem;
+            transition: all .2s ease;
+        }
+        .home-quick a:hover {
+            color: var(--text);
+            border-color: color-mix(in srgb, var(--leaf) 40%, var(--border));
+            background: var(--leaf-soft);
+            transform: translateY(-1px);
+        }
+
+        .home-recent { margin-top: 36px; }
+        .home-recent-label {
+            display:flex; align-items:center; justify-content:space-between;
+            margin-bottom: 14px;
+        }
+        .home-recent-label .more {
+            font-size: .78rem; color: var(--text-dim); letter-spacing: 0;
+            text-transform: none;
+        }
+        .home-recent-label .more:hover { color: var(--accent); }
+        #homeRecentList {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        .home-recent-item {
+            display: grid !important;
+            grid-template-columns: 112px 1fr;
+            gap: 0 !important;
+            align-items: stretch !important;
+            padding: 0 !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 16px;
+            overflow: hidden;
+            background: var(--bg-card);
+            box-shadow: var(--shadow-soft);
+            transition: transform .22s ease, box-shadow .22s ease, border-color .22s;
+            cursor: pointer;
+        }
+        .home-recent-item:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--card-lift);
+            border-color: color-mix(in srgb, var(--leaf) 30%, var(--border)) !important;
+        }
+        .home-recent-item .cover-thumb-wrap,
+        .home-recent-item .cover-thumb,
+        .home-recent-item .cover-img,
+        .home-recent-item .cover-ph {
+            width: 112px; height: 100%; min-height: 112px;
+            object-fit: cover; display:block;
+            background: linear-gradient(135deg, var(--bg-soft), var(--bg-card));
+        }
+        .home-recent-item .card-body {
+            padding: 14px 16px 14px 14px;
+            display:flex; flex-direction:column; justify-content:center;
+            min-width: 0;
+        }
+        .home-recent-item .row {
+            display:flex; justify-content:space-between; gap:10px; align-items:baseline;
+        }
+        .home-recent-item .title {
+            font-family: var(--font-serif);
+            font-size: 1.02rem; font-weight: 600; color: var(--text);
+            line-height: 1.35;
+        }
+        .home-recent-item .date { font-size: .75rem; color: var(--text-dim); white-space: nowrap; }
+        .home-recent-item .meta {
+            display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+            margin-top: 6px; font-size: .76rem; color: var(--text-dim);
+        }
+        .home-recent-item .excerpt {
+            margin-top: 8px; font-size: .86rem; line-height: 1.6;
+            color: var(--text-secondary);
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        @media (max-width: 560px) {
+            .home-recent-item { grid-template-columns: 1fr !important; }
+            .home-recent-item .cover-img,
+            .home-recent-item .cover-ph { width:100%; height:140px; min-height:140px; }
+        }
+
+        /* Article cards */
+        .standalone-art-list {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
+            margin-top: 8px !important;
+        }
+        .art-entry {
+            display: grid;
+            grid-template-columns: 160px 1fr;
+            gap: 0;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            overflow: hidden;
+            background: var(--bg-card);
+            box-shadow: var(--shadow-soft);
+            transition: transform .22s ease, box-shadow .22s ease, border-color .22s;
+            cursor: pointer;
+        }
+        .art-entry:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--card-lift);
+            border-color: color-mix(in srgb, var(--leaf) 28%, var(--border));
+        }
+        .art-entry .cover-thumb-wrap,
+        .art-entry .cover-thumb,
+        .art-entry .cover-img,
+        .art-entry .cover-ph {
+            width: 160px; height: 100%; min-height: 140px;
+            object-fit: cover; display:block;
+            background: linear-gradient(145deg, #d9cfc0, #ebe4d8 45%, #c9d5c4);
+        }
+        .art-entry .card-body { padding: 18px 18px 16px; min-width:0; }
+        .art-entry .art-title {
+            font-family: var(--font-serif);
+            font-size: 1.15rem; font-weight: 650; line-height: 1.35;
+            color: var(--text); margin-bottom: 8px;
+        }
+        .art-entry .art-meta {
+            font-size: .78rem; color: var(--text-dim);
+            display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+            margin-bottom: 8px;
+        }
+        .art-entry .art-excerpt {
+            font-size: .9rem; line-height: 1.7; color: var(--text-secondary);
+            display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .art-entry .art-admin-actions {
+            margin-top: 10px; display:flex; gap:12px; font-size: .78rem; color: var(--text-dim);
+        }
+        .art-entry .art-admin-actions .danger { color: #b45a4a; }
+        @media (max-width: 640px) {
+            .art-entry { grid-template-columns: 1fr; }
+            .art-entry .cover-img, .art-entry .cover-ph { width:100%; height:160px; min-height:160px; }
+        }
+        .search-bar input {
+            width: 100%;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            border-radius: 999px;
+            padding: 12px 16px;
+            color: var(--text);
+            box-shadow: var(--shadow-soft);
+            transition: border-color .2s, box-shadow .2s;
+        }
+        .search-bar input:focus {
+            outline: none;
+            border-color: color-mix(in srgb, var(--leaf) 45%, var(--border));
+            box-shadow: 0 0 0 4px var(--leaf-soft);
+        }
+
+        /* Timeline soft plant feel */
+        .tl-item::before {
+            background: linear-gradient(180deg, color-mix(in srgb, var(--leaf) 55%, var(--border)), var(--border)) !important;
+        }
+        .tl-dot {
+            background: var(--bg-card) !important;
+            border: 2px solid var(--leaf);
+            box-shadow: 0 0 0 3px var(--leaf-soft);
+        }
+        .tl-first .tl-dot {
+            background: var(--leaf) !important;
+            border-color: var(--leaf);
+            box-shadow: 0 0 0 4px var(--leaf-soft);
+        }
+        .tl-card {
+            border: 1px solid transparent;
+            border-radius: 12px;
+            padding: 10px 12px 16px !important;
+            transition: background .2s, border-color .2s;
+        }
+        .tl-item:hover .tl-card {
+            background: color-mix(in srgb, var(--bg-card) 90%, transparent);
+            border-color: var(--border);
+        }
+
+        /* About card */
+        .about-layout {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            gap: 22px;
+            align-items: start;
+        }
+        @media (max-width: 680px) {
+            .about-layout { grid-template-columns: 1fr; }
+        }
+        .about-seal {
+            aspect-ratio: 1;
+            border-radius: 22px;
+            border: 1px solid var(--border);
+            background:
+              radial-gradient(circle at 30% 25%, rgba(255,255,255,.35), transparent 40%),
+              linear-gradient(160deg, #efe6d8, #d8e0d2 55%, #e8d8c8);
+            display:flex; align-items:center; justify-content:center;
+            position: relative; overflow:hidden;
+            box-shadow: var(--card-lift);
+        }
+        [data-theme="dark"] .about-seal {
+            background:
+              radial-gradient(circle at 30% 25%, rgba(255,255,255,.06), transparent 40%),
+              linear-gradient(160deg, #2a241c, #243027 55%, #2c241c);
+        }
+        .about-seal .big {
+            font-family: var(--font-serif);
+            font-size: 4.2rem; color: var(--accent); opacity: .85;
+            letter-spacing: .08em;
+        }
+        .about-seal .stamp {
+            position:absolute; right:12px; bottom:12px;
+            width:42px; height:42px; border-radius:6px;
+            border: 1.5px solid color-mix(in srgb, #b44 70%, var(--accent));
+            color: color-mix(in srgb, #b44 70%, var(--accent));
+            display:flex; align-items:center; justify-content:center;
+            font-family: var(--font-serif); font-size: .78rem; line-height:1.1;
+            transform: rotate(-12deg);
+            background: color-mix(in srgb, var(--bg-card) 40%, transparent);
+        }
+        .about-card {
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            border-radius: 18px;
+            padding: 22px 22px 18px;
+            box-shadow: var(--shadow-soft);
+        }
+        .about-card h3 {
+            font-family: var(--font-serif);
+            font-size: 1.35rem; margin: 0 0 8px; color: var(--text);
+            letter-spacing: .12em;
+        }
+        .about-card .sub {
+            color: var(--text-dim); font-size: .84rem; margin-bottom: 16px;
+        }
+        .about-card p {
+            font-size: .94rem; line-height: 1.9; color: var(--text-secondary);
+            margin: 0 0 12px;
+        }
+        .about-meta {
+            display:grid; grid-template-columns: repeat(3, minmax(0,1fr));
+            gap: 10px; margin-top: 18px;
+        }
+        @media (max-width: 680px) { .about-meta { grid-template-columns: 1fr; } }
+        .about-meta .item {
+            border: 1px dashed var(--border);
+            border-radius: 12px;
+            padding: 12px;
+            background: color-mix(in srgb, var(--bg-soft) 55%, transparent);
+        }
+        .about-meta .item .k { font-size: .72rem; color: var(--text-dim); letter-spacing: .08em; margin-bottom: 4px; }
+        .about-meta .item .v { font-family: var(--font-serif); color: var(--text); font-size: .92rem; }
+
+        /* cover thumb alignment for cards */
+        .home-recent-item .cover-thumb-wrap,
+        .art-entry .cover-thumb-wrap {
+            margin: 0 !important;
+            border-radius: 0 !important;
+            width: 100%;
+            height: 100%;
+            min-height: inherit;
+            overflow: hidden;
+            border: none !important;
+            background: linear-gradient(145deg, var(--bg-soft), color-mix(in srgb, var(--leaf) 18%, var(--bg-card)));
+        }
+        .home-recent-item .cover-thumb,
+        .art-entry .cover-thumb {
+            width: 100%; height: 100%; min-height: inherit;
+            object-fit: cover; display:block;
+        }
+        .home-recent-item .cover-thumb-wrap { width:112px; min-height:112px; }
+        .art-entry .cover-thumb-wrap { width:160px; min-height:140px; }
+        @media (max-width: 640px) {
+            .home-recent-item .cover-thumb-wrap,
+            .art-entry .cover-thumb-wrap { width:100%; min-height:150px; height:150px; }
+        }
+
+        /* Quiet reading: keep detail calm */
+        #view-article-detail .art-content {
+            max-width: 42rem;
+        }
+        .footer {
+            margin-top: 12px;
+            opacity: .9;
+        }
+        .view.active { animation: riseIn .38s ease; }
+
     </style>
 </head>
 <body>
@@ -1374,10 +1823,31 @@
         <!-- ========== VIEW: HOME ========== -->
         <section class="view active" id="view-home">
             <div class="home-hero">
+                <div class="home-seal"><span class="dot" aria-hidden="true"></span><span id="homeSealText">纸间小园 · 今日亦在</span></div>
                 <div class="home-name">芸芣苡</div>
                 <div class="home-quote loading" id="dailyQuote">载其见兮</div>
                 <div class="home-divider"></div>
                 <div class="home-mood" id="homeMood">纸短情长 · 载其见兮</div>
+                <div class="home-status-grid" id="homeStatusGrid">
+                    <div class="status-card">
+                        <div class="k">今日时辰</div>
+                        <div class="v" id="homeClock">——</div>
+                    </div>
+                    <div class="status-card">
+                        <div class="k">站点状态</div>
+                        <div class="v" id="homeStats">正在铺纸…</div>
+                    </div>
+                    <div class="status-card">
+                        <div class="k">最近心情</div>
+                        <div class="v" id="homeVibe">草木静好</div>
+                    </div>
+                </div>
+                <div class="home-quick">
+                    <a href="#" data-view="articles">去读文章 →</a>
+                    <a href="#" data-view="timeline">逛时间线 →</a>
+                    <a href="#" data-view="guestbook">写留言 →</a>
+                    <a href="#" data-view="about">关于这里 →</a>
+                </div>
                 <div class="home-sections" style="display:none">
                     <a href="#" data-view="articles">文章 <span class="arrow">&nbsp;→</span></a>
                     <a href="#" data-view="timeline">时间线 <span class="arrow">&nbsp;→</span></a>
@@ -1386,7 +1856,7 @@
                 </div>
             </div>
             <div class="home-recent">
-                <div class="home-recent-label">最近更新</div>
+                <div class="home-recent-label"><span>最近更新</span><a href="#" class="more" data-view="articles">全部文章</a></div>
                 <div id="homeRecentList">
                     <div class="skeleton"></div>
                     <div class="skeleton" style="width:80%"></div>
@@ -1550,16 +2020,23 @@
             <div class="page-header">
                 <h2>关于</h2>
             </div>
-            <div style="font-size:.92rem;line-height:1.9;color:var(--text-secondary);max-width:520px">
-                <p style="margin-bottom:16px;color:var(--text)">
-                    「芣苡」—— 《诗经·周南》中的植物，古人以为宜子之祥。
-                </p>
-                <p style="margin-bottom:16px">
-                    这里是一个人的写字角落，记录一些想法、笔记和杂谈。
-                </p>
-                <p style="color:var(--text-dim)">
-                    偶尔更新，随缘写作。
-                </p>
+            <div class="about-layout">
+                <div class="about-seal" aria-hidden="true">
+                    <div class="big">芸</div>
+                    <div class="stamp">载见</div>
+                </div>
+                <div class="about-card">
+                    <h3>芸芣苡</h3>
+                    <div class="sub">纸短情长 · 载其见兮</div>
+                    <p>「芣苡」出自《诗经·周南》，是古人眼里的宜子之祥。这里借一株草木，做一间自己的写字小园。</p>
+                    <p>记录想法、笔记与杂谈。首页可以热闹一点，正文则尽量安静，让阅读像翻一页旧纸。</p>
+                    <p style="color:var(--text-dim);margin-bottom:0">偶尔更新，随缘写作。若你路过，欢迎在留言板留下一行字。</p>
+                    <div class="about-meta">
+                        <div class="item"><div class="k">在写</div><div class="v" id="aboutWriting">随笔与记录</div></div>
+                        <div class="item"><div class="k">在听</div><div class="v" id="aboutListening">站内轻音乐</div></div>
+                        <div class="item"><div class="k">在想</div><div class="v" id="aboutThinking">把日常安放妥当</div></div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -1742,8 +2219,8 @@
         // 管理员配置：由 GitHub Actions 从 Secrets 注入（不要在源码写明文密码）
         // Secrets: ADMIN_USER / ADMIN_PASS_HASH / BLOG_GH_TOKEN
         const ADMIN_CFG = {
-            user: 'eli',
-            passHash: '2c871b07575f444f77dc370cbf970825692bbf8d78eacceeafd7936e40deccdb',
+            user: '%%ADMIN_USER%%',
+            passHash: '%%ADMIN_PASS_HASH%%',
             // 登录后自动写入，用于文章/默认音乐云端同步（可在 Secrets 注入替换）
             ghToken: '%%BLOG_GH_TOKEN%%'
         };
@@ -1870,7 +2347,8 @@
             try { initArticles(); } catch (e) {}
             try { initGitHub(); } catch (e) {}
             try { initMusic(); } catch (e) {}
-            try { initQuote(); } catch (e) {}
+            try { initQuote();
+            try { setInterval(() => updateHomeAtmosphere(), 60000); } catch (e) {} } catch (e) {}
             try { initOptimizations(); } catch (e) {}
             try { initMarkdownEditor(); } catch (e) {}
             try { initGuestbook(); } catch (e) {}
@@ -2165,6 +2643,15 @@
                 localStorage.setItem('blog_theme', next);
                 $('themeToggle').textContent = next === 'dark' ? '◎' : '○';
             });
+            const header = document.querySelector('.header');
+            if (header) {
+                const onScroll = () => {
+                    if (window.scrollY > 8) header.classList.add('scrolled');
+                    else header.classList.remove('scrolled');
+                };
+                window.addEventListener('scroll', onScroll, { passive: true });
+                onScroll();
+            }
         }
 
         // ================================================================
@@ -2363,8 +2850,83 @@
         // ================================================================
         function initQuote() {
             const q = QUOTES[Math.floor(Math.random() * QUOTES.length)];
-            $('dailyQuote').textContent = '“' + q + '”';
-            $('dailyQuote').classList.remove('loading');
+            const el = $('dailyQuote');
+            if (!el) return;
+            const full = '“' + q + '”';
+            el.classList.remove('loading');
+            el.classList.add('typing');
+            el.textContent = '';
+            let i = 0;
+            const step = () => {
+                if (i <= full.length) {
+                    el.textContent = full.slice(0, i);
+                    i += 1;
+                    setTimeout(step, i < 3 ? 40 : 28 + Math.random() * 30);
+                } else {
+                    el.classList.remove('typing');
+                }
+            };
+            step();
+            updateHomeAtmosphere(q);
+        }
+
+        function shichenOf(date) {
+            const h = date.getHours();
+            const names = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+            // 23-1 子, 1-3 丑 ...
+            const idx = Math.floor(((h + 1) % 24) / 2);
+            return names[idx] + '时';
+        }
+
+        function updateHomeAtmosphere(quoteText) {
+            const now = new Date();
+            const clock = $('homeClock');
+            if (clock) {
+                const hm = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+                clock.textContent = shichenOf(now) + ' · ' + hm;
+            }
+            const seal = $('homeSealText');
+            if (seal) {
+                const greet = now.getHours() < 5 ? '夜深了，灯下见' :
+                    now.getHours() < 11 ? '晨光正好' :
+                    now.getHours() < 14 ? '午后片刻' :
+                    now.getHours() < 18 ? '傍晚将至' : '夜里也温柔';
+                seal.textContent = '纸间小园 · ' + greet;
+            }
+            const vibe = $('homeVibe');
+            if (vibe) {
+                const vibes = ['草木静好','纸短情长','风过无痕','慢慢写字','把日子过软','今日亦在'];
+                vibe.textContent = vibes[now.getDate() % vibes.length];
+            }
+            const mood = $('homeMood');
+            if (mood) {
+                const q = (quoteText || '').replace(/[“”]/g,'');
+                mood.textContent = '纸短情长 · ' + (q.length > 14 ? q.slice(0, 14) + '…' : (q || '载其见兮'));
+            }
+            refreshHomeStats();
+            const listen = $('aboutListening');
+            if (listen && window.siteConfig && siteConfig.defaultMusic) {
+                const m = siteConfig.defaultMusic;
+                const name = m.name || m.title || '';
+                const artist = m.artist || '';
+                if (name) listen.textContent = name + (artist ? ' · ' + artist : '');
+            }
+        }
+
+        function refreshHomeStats() {
+            const el = $('homeStats');
+            if (!el) return;
+            const n = (typeof articles !== 'undefined' && articles && articles.length) ? articles.length : 0;
+            let g = null;
+            try {
+                if (typeof guestMessages !== 'undefined' && Array.isArray(guestMessages)) g = guestMessages.length;
+                else if (typeof guestbook !== 'undefined' && Array.isArray(guestbook)) g = guestbook.length;
+                else if (typeof messages !== 'undefined' && Array.isArray(messages)) g = messages.length;
+            } catch (e) {}
+            if (g == null) el.textContent = n + ' 篇文章在架';
+            else el.textContent = n + ' 篇 · ' + g + ' 条留言';
+            const writing = $('aboutWriting');
+            if (writing) writing.textContent = n ? ('已写下 ' + n + ' 篇') : '静待第一篇';
         }
 
         // ================================================================
@@ -2743,6 +3305,7 @@
             });
             list.innerHTML = html;
             try { hydrateLazyImages(list); } catch (e) {}
+            try { refreshHomeStats(); } catch (e) {}
         }
 
         function openArticle(idxOrId) {
